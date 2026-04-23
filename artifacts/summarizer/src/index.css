@@ -109,9 +109,9 @@
   --chart-4: 30 20% 60%;
   --chart-5: 0 0% 40%;
 
-  --app-font-sans: 'Outfit', sans-serif;
-  --app-font-serif: 'Playfair Display', serif;
-  --app-font-mono: 'Space Mono', monospace;
+  --app-font-sans: 'Outfit', 'Noto Sans Khmer', sans-serif;
+  --app-font-serif: 'Playfair Display', 'Noto Serif Khmer', serif;
+  --app-font-mono: 'Space Mono', 'Noto Sans Khmer', monospace;
   
   --radius: 0.5rem;
   
