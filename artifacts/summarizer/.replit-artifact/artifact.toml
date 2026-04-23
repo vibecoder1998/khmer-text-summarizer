@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Text Summarizer"
+version = "1.0.0"
+id = "artifacts/summarizer"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25532
+
+[services.development]
+run = "pnpm --filter @workspace/summarizer run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/summarizer", "run", "build" ]
+publicDir = "artifacts/summarizer/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25532"
+BASE_PATH = "/"

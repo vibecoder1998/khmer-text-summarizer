@@ -14,3 +14,48 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Generates a concise summary of the provided text using an AI model.
+ * @summary Summarize text
+ */
+export const summarizeTextBodyTextMin = 50;
+export const summarizeTextBodyTextMax = 50000;
+
+export const summarizeTextBodyLengthDefault = `medium`;
+export const summarizeTextBodyFormatDefault = `paragraph`;
+export const summarizeTextBodyToneDefault = `neutral`;
+
+export const SummarizeTextBody = zod.object({
+  text: zod
+    .string()
+    .min(summarizeTextBodyTextMin)
+    .max(summarizeTextBodyTextMax)
+    .describe("The source text to summarize."),
+  length: zod
+    .enum(["short", "medium", "long"])
+    .default(summarizeTextBodyLengthDefault)
+    .describe("Approximate desired length of the summary."),
+  format: zod
+    .enum(["paragraph", "bullets"])
+    .default(summarizeTextBodyFormatDefault)
+    .describe("Output format — flowing paragraph or bullet list."),
+  tone: zod
+    .enum(["neutral", "formal", "casual", "academic"])
+    .default(summarizeTextBodyToneDefault)
+    .describe("Tone of the summary."),
+});
+
+export const SummarizeTextResponse = zod.object({
+  summary: zod.string().describe("The generated summary."),
+  format: zod.enum(["paragraph", "bullets"]),
+  length: zod.enum(["short", "medium", "long"]),
+  tone: zod.enum(["neutral", "formal", "casual", "academic"]),
+  sourceWordCount: zod.number(),
+  summaryWordCount: zod.number(),
+  compressionRatio: zod
+    .number()
+    .describe("summaryWordCount \/ sourceWordCount"),
+  model: zod.string(),
+  durationMs: zod.number(),
+});

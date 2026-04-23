@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: summarize
+    description: Text summarization operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /summarize:
+    post:
+      operationId: summarizeText
+      tags: [summarize]
+      summary: Summarize text
+      description: Generates a concise summary of the provided text using an AI model.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SummarizeRequest"
+      responses:
+        "200":
+          description: Summary generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SummarizeResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +66,74 @@ components:
           type: string
       required:
         - status
-
+    SummarizeRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 50
+          maxLength: 50000
+          description: The source text to summarize.
+        length:
+          type: string
+          enum: [short, medium, long]
+          default: medium
+          description: Approximate desired length of the summary.
+        format:
+          type: string
+          enum: [paragraph, bullets]
+          default: paragraph
+          description: Output format — flowing paragraph or bullet list.
+        tone:
+          type: string
+          enum: [neutral, formal, casual, academic]
+          default: neutral
+          description: Tone of the summary.
+      required:
+        - text
+    SummarizeResponse:
+      type: object
+      properties:
+        summary:
+          type: string
+          description: The generated summary.
+        format:
+          type: string
+          enum: [paragraph, bullets]
+        length:
+          type: string
+          enum: [short, medium, long]
+        tone:
+          type: string
+          enum: [neutral, formal, casual, academic]
+        sourceWordCount:
+          type: integer
+        summaryWordCount:
+          type: integer
+        compressionRatio:
+          type: number
+          description: summaryWordCount / sourceWordCount
+        model:
+          type: string
+        durationMs:
+          type: integer
+      required:
+        - summary
+        - format
+        - length
+        - tone
+        - sourceWordCount
+        - summaryWordCount
+        - compressionRatio
+        - model
+        - durationMs
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message

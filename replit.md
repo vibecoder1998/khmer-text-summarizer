@@ -25,3 +25,12 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Artifacts
+
+- `artifacts/summarizer` — Distill, the text summarization web app (React + Vite). Calls `POST /api/summarize` which uses Anthropic via Replit AI Integrations.
+- `artifacts/api-server` — Express 5 API server. Routes: `GET /api/healthz`, `POST /api/summarize`.
+
+## Integrations
+
+- Anthropic AI (Replit AI Integrations) — `lib/integrations-anthropic-ai`. Env: `AI_INTEGRATIONS_ANTHROPIC_BASE_URL`, `AI_INTEGRATIONS_ANTHROPIC_API_KEY`.

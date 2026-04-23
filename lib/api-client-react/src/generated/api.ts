@@ -5,18 +5,26 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  ErrorResponse,
+  HealthStatus,
+  SummarizeRequest,
+  SummarizeResponse,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +107,90 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Generates a concise summary of the provided text using an AI model.
+ * @summary Summarize text
+ */
+export const getSummarizeTextUrl = () => {
+  return `/api/summarize`;
+};
+
+export const summarizeText = async (
+  summarizeRequest: SummarizeRequest,
+  options?: RequestInit,
+): Promise<SummarizeResponse> => {
+  return customFetch<SummarizeResponse>(getSummarizeTextUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(summarizeRequest),
+  });
+};
+
+export const getSummarizeTextMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof summarizeText>>,
+    TError,
+    { data: BodyType<SummarizeRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof summarizeText>>,
+  TError,
+  { data: BodyType<SummarizeRequest> },
+  TContext
+> => {
+  const mutationKey = ["summarizeText"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof summarizeText>>,
+    { data: BodyType<SummarizeRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return summarizeText(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SummarizeTextMutationResult = NonNullable<
+  Awaited<ReturnType<typeof summarizeText>>
+>;
+export type SummarizeTextMutationBody = BodyType<SummarizeRequest>;
+export type SummarizeTextMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Summarize text
+ */
+export const useSummarizeText = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof summarizeText>>,
+    TError,
+    { data: BodyType<SummarizeRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof summarizeText>>,
+  TError,
+  { data: BodyType<SummarizeRequest> },
+  TContext
+> => {
+  return useMutation(getSummarizeTextMutationOptions(options));
+};

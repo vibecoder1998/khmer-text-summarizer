@@ -8,3 +8,100 @@
 export interface HealthStatus {
   status: string;
 }
+
+/**
+ * Approximate desired length of the summary.
+ */
+export type SummarizeRequestLength =
+  (typeof SummarizeRequestLength)[keyof typeof SummarizeRequestLength];
+
+export const SummarizeRequestLength = {
+  short: "short",
+  medium: "medium",
+  long: "long",
+} as const;
+
+/**
+ * Output format — flowing paragraph or bullet list.
+ */
+export type SummarizeRequestFormat =
+  (typeof SummarizeRequestFormat)[keyof typeof SummarizeRequestFormat];
+
+export const SummarizeRequestFormat = {
+  paragraph: "paragraph",
+  bullets: "bullets",
+} as const;
+
+/**
+ * Tone of the summary.
+ */
+export type SummarizeRequestTone =
+  (typeof SummarizeRequestTone)[keyof typeof SummarizeRequestTone];
+
+export const SummarizeRequestTone = {
+  neutral: "neutral",
+  formal: "formal",
+  casual: "casual",
+  academic: "academic",
+} as const;
+
+export interface SummarizeRequest {
+  /**
+   * The source text to summarize.
+   * @minLength 50
+   * @maxLength 50000
+   */
+  text: string;
+  /** Approximate desired length of the summary. */
+  length?: SummarizeRequestLength;
+  /** Output format — flowing paragraph or bullet list. */
+  format?: SummarizeRequestFormat;
+  /** Tone of the summary. */
+  tone?: SummarizeRequestTone;
+}
+
+export type SummarizeResponseFormat =
+  (typeof SummarizeResponseFormat)[keyof typeof SummarizeResponseFormat];
+
+export const SummarizeResponseFormat = {
+  paragraph: "paragraph",
+  bullets: "bullets",
+} as const;
+
+export type SummarizeResponseLength =
+  (typeof SummarizeResponseLength)[keyof typeof SummarizeResponseLength];
+
+export const SummarizeResponseLength = {
+  short: "short",
+  medium: "medium",
+  long: "long",
+} as const;
+
+export type SummarizeResponseTone =
+  (typeof SummarizeResponseTone)[keyof typeof SummarizeResponseTone];
+
+export const SummarizeResponseTone = {
+  neutral: "neutral",
+  formal: "formal",
+  casual: "casual",
+  academic: "academic",
+} as const;
+
+export interface SummarizeResponse {
+  /** The generated summary. */
+  summary: string;
+  format: SummarizeResponseFormat;
+  length: SummarizeResponseLength;
+  tone: SummarizeResponseTone;
+  sourceWordCount: number;
+  summaryWordCount: number;
+  /** summaryWordCount / sourceWordCount */
+  compressionRatio: number;
+  model: string;
+  durationMs: number;
+}
+
+export interface ErrorResponse {
+  error: string;
+  message: string;
+}
