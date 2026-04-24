@@ -28,7 +28,7 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 
 ## Artifacts
 
-- `artifacts/summarizer` — Distill, the text summarization web app (React + Vite). Calls `POST /api/summarize` which uses Anthropic via Replit AI Integrations.
+- `artifacts/summarizer` — ខ្លឹម (Khlim), the Khmer text summarization web app (React + Vite). Calls `POST /api/summarize` which proxies to Hugging Face Gradio models.
 - `artifacts/api-server` — Express 5 API server. Routes: `GET /api/healthz`, `POST /api/summarize`.
 
 ## Integrations

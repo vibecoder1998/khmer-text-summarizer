@@ -195,7 +195,7 @@ const en: Dict = {
   heroTitleA: "Clear thoughts from",
   heroTitleB: "complex writing.",
   heroSubtitle:
-    "A focused tool for editors, researchers, and writers. Paste your long-form text and distill it into its essential meaning.",
+    "A focused tool for editors, researchers, and writers. Paste your long-form text and condense it into its essential meaning.",
   sourceText: "Source text",
   charsOf: (n, max) => `${n} / ${max} chars`,
   placeholder: "Paste your article, research paper, or meeting notes here...",
@@ -218,7 +218,7 @@ const en: Dict = {
   maxLength: "Max length",
   maxLengthHint: "Maximum tokens in summary",
   summarize: "Summarize",
-  distilling: "Distilling...",
+  distilling: "Summarizing...",
   failed: "Failed to summarize. Please try again.",
   summary: "Summary",
   copy: "Copy",
@@ -226,7 +226,7 @@ const en: Dict = {
   copiedDesc: "The summary has been copied to your clipboard.",
   awaitingTitle: "Awaiting text",
   awaitingDesc:
-    "Paste your text, configure the settings, and hit summarize to generate a distilled version.",
+    "Paste your text, configure the settings, and hit summarize to generate a concise version.",
   compressed: (pct) => `${pct}% compressed`,
   wordsArrow: (a, b) => `${a} → ${b} words`,
   seconds: (s) => `${s}s`,
@@ -237,7 +237,7 @@ const en: Dict = {
   useCasesTitle: "Perfect for everyday writing",
   research: "Research Papers",
   researchDesc:
-    "Distill abstract academic prose into accessible summaries for quick review.",
+    "Condense abstract academic prose into accessible summaries for quick review.",
   meeting: "Meeting Notes",
   meetingDesc: "Convert rambling meeting transcripts into actionable bullet points.",
   articles: "Long Articles",
