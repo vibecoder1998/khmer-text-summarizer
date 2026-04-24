@@ -58,7 +58,7 @@ type Dict = {
 };
 
 const km: Dict = {
-  brand: "Distill",
+  brand: "ខ្លឹម",
   heroTitleA: "ការគិតច្បាស់លាស់",
   heroTitleB: "ពីការសរសេរស្មុគស្មាញ",
   heroSubtitle:
@@ -111,13 +111,13 @@ const km: Dict = {
   articlesDesc: "ទទួលបានចំណុចសំខាន់នៃសារព័ត៌មានវែងមុនពេលចំណាយពេលអានពេញ។",
   footerTagline: "ការសរសេរច្បាស់លាស់សម្រាប់មនុស្សគ្រប់រូប។",
   switchLang: "English",
-  htmlTitle: "Distill — សង្ខេបអត្ថបទច្បាស់លាស់",
+  htmlTitle: "ខ្លឹម — សង្ខេបអត្ថបទច្បាស់លាស់",
   htmlDesc:
     "ឧបករណ៍ស្អាតផ្តោតសម្រាប់ប្រែការសរសេរវែងទៅជាការសង្ខេបច្បាស់លាស់។",
 };
 
 const en: Dict = {
-  brand: "Distill",
+  brand: "ខ្លឹម",
   heroTitleA: "Clear thoughts from",
   heroTitleB: "complex writing.",
   heroSubtitle:
@@ -170,7 +170,7 @@ const en: Dict = {
   articlesDesc: "Get the gist of long-form journalism before committing to the full read.",
   footerTagline: "Clear writing for everyone.",
   switchLang: "ខ្មែរ",
-  htmlTitle: "Distill — Clear, focused text summarization",
+  htmlTitle: "ខ្លឹម — Clear, focused text summarization",
   htmlDesc: "A clean, focused tool for turning long writing into clear summaries.",
 };
 
