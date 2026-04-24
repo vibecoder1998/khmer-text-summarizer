@@ -2,13 +2,13 @@ import { useState } from "react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { useSummarizeText } from "@workspace/api-client-react";
-import { SummarizeRequestLength, SummarizeRequestFormat, SummarizeRequestTone } from "@workspace/api-client-react";
+import { SummarizeRequestModel, SummarizeRequestFormat } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
-import { Copy, Trash2, ArrowRight, Loader2, Type, AlignLeft, Sparkles, Clock, HardDrive, FileText, SplitSquareHorizontal } from "lucide-react";
+import { Copy, Trash2, ArrowRight, Loader2, Type, AlignLeft, Sparkles, Clock, HardDrive, FileText, SplitSquareHorizontal, Cpu, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 
@@ -20,9 +20,11 @@ export default function Home() {
   const { t } = useI18n();
 
   const [text, setText] = useState("");
-  const [length, setLength] = useState<SummarizeRequestLength>("medium");
+  const [model, setModel] = useState<SummarizeRequestModel>("mt5-base");
   const [format, setFormat] = useState<SummarizeRequestFormat>("paragraph");
-  const [tone, setTone] = useState<SummarizeRequestTone>("neutral");
+  const [numBeams, setNumBeams] = useState<number>(4);
+  const [maxNewTokens, setMaxNewTokens] = useState<number>(256);
+  const [maxLength, setMaxLength] = useState<number>(512);
 
   const { mutate: summarize, data: result, isPending, error } = useSummarizeText();
 
@@ -44,7 +46,11 @@ export default function Home() {
       return;
     }
 
-    summarize({ data: { text, length, format, tone } });
+    if (model === "mt5-base") {
+      summarize({ data: { text, model, format, numBeams, maxNewTokens } });
+    } else {
+      summarize({ data: { text, model, format, maxLength } });
+    }
   };
 
   const handleCopy = () => {
@@ -61,14 +67,8 @@ export default function Home() {
   const isOverLimit = charCount > MAX_CHARS;
   const isUnderLimit = charCount > 0 && charCount < MIN_CHARS;
 
-  const lengthLabels: Record<SummarizeRequestLength, string> = {
-    short: t.short, medium: t.medium, long: t.long,
-  };
   const formatLabels: Record<SummarizeRequestFormat, string> = {
     paragraph: t.paragraph, bullets: t.bullets,
-  };
-  const toneLabels: Record<SummarizeRequestTone, string> = {
-    neutral: t.neutral, formal: t.formal, casual: t.casual, academic: t.academic,
   };
 
   return (
@@ -135,25 +135,37 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-6 lg:pt-10 lg:w-[240px]">
+          <div className="flex flex-col gap-6 lg:pt-10 lg:w-[260px]">
             <Card className="p-5 flex flex-col gap-6 shadow-sm border-border">
+              {/* Model */}
               <div className="space-y-3">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <AlignLeft className="w-3.5 h-3.5" /> {t.length}
+                  <Cpu className="w-3.5 h-3.5" /> {t.model}
                 </label>
-                <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
-                  {(["short", "medium", "long"] as const).map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => setLength(opt)}
-                      className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${length === opt ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-                    >
-                      {lengthLabels[opt]}
-                    </button>
-                  ))}
+                <div className="flex flex-col gap-1.5">
+                  {(["mt5-base", "gemma-4-4b"] as const).map((opt) => {
+                    const active = model === opt;
+                    const label = opt === "mt5-base" ? t.modelMt5 : t.modelGemma;
+                    const desc = opt === "mt5-base" ? t.modelMt5Desc : t.modelGemmaDesc;
+                    const icon = opt === "mt5-base" ? <Zap className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />;
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => setModel(opt)}
+                        className={`text-left p-2.5 rounded-md border transition-all ${active ? 'bg-primary/5 border-primary text-foreground' : 'bg-background border-border hover:border-foreground/20'}`}
+                      >
+                        <div className="flex items-center gap-1.5 text-sm font-medium">
+                          <span className={active ? 'text-primary' : 'text-muted-foreground'}>{icon}</span>
+                          <span>{label}</span>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5 ml-5">{desc}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
+              {/* Format */}
               <div className="space-y-3">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                   <Type className="w-3.5 h-3.5" /> {t.format}
@@ -171,22 +183,70 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> {t.tone}
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {(["neutral", "formal", "casual", "academic"] as const).map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => setTone(opt)}
-                      className={`text-xs py-1.5 px-3 rounded-full font-medium transition-all border ${tone === opt ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground border-border hover:border-foreground/20 hover:text-foreground'}`}
-                    >
-                      {toneLabels[opt]}
-                    </button>
-                  ))}
+              {/* mT5-only params */}
+              {model === "mt5-base" && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between gap-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <AlignLeft className="w-3.5 h-3.5" /> {t.numBeams}
+                      </span>
+                      <span className="text-foreground font-mono normal-case tracking-normal">{numBeams}</span>
+                    </label>
+                    <input
+                      type="range"
+                      min={1}
+                      max={8}
+                      step={1}
+                      value={numBeams}
+                      onChange={(e) => setNumBeams(Number(e.target.value))}
+                      className="w-full accent-primary"
+                    />
+                    <p className="text-[11px] text-muted-foreground leading-tight">{t.numBeamsHint}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between gap-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <AlignLeft className="w-3.5 h-3.5" /> {t.maxNewTokens}
+                      </span>
+                      <span className="text-foreground font-mono normal-case tracking-normal">{maxNewTokens}</span>
+                    </label>
+                    <input
+                      type="range"
+                      min={32}
+                      max={1024}
+                      step={32}
+                      value={maxNewTokens}
+                      onChange={(e) => setMaxNewTokens(Number(e.target.value))}
+                      className="w-full accent-primary"
+                    />
+                    <p className="text-[11px] text-muted-foreground leading-tight">{t.maxNewTokensHint}</p>
+                  </div>
+                </>
+              )}
+
+              {/* Gemma-only params */}
+              {model === "gemma-4-4b" && (
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between gap-1.5">
+                    <span className="flex items-center gap-1.5">
+                      <AlignLeft className="w-3.5 h-3.5" /> {t.maxLength}
+                    </span>
+                    <span className="text-foreground font-mono normal-case tracking-normal">{maxLength}</span>
+                  </label>
+                  <input
+                    type="range"
+                    min={64}
+                    max={1024}
+                    step={32}
+                    value={maxLength}
+                    onChange={(e) => setMaxLength(Number(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                  <p className="text-[11px] text-muted-foreground leading-tight">{t.maxLengthHint}</p>
                 </div>
-              </div>
+              )}
             </Card>
 
             <Button

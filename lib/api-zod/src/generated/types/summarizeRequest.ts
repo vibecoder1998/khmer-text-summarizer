@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SummarizeRequestFormat } from "./summarizeRequestFormat";
-import type { SummarizeRequestLength } from "./summarizeRequestLength";
-import type { SummarizeRequestTone } from "./summarizeRequestTone";
+import type { SummarizeRequestModel } from "./summarizeRequestModel";
 
 export interface SummarizeRequest {
   /**
@@ -16,10 +15,26 @@ export interface SummarizeRequest {
    * @maxLength 50000
    */
   text: string;
-  /** Approximate desired length of the summary. */
-  length?: SummarizeRequestLength;
+  /** Which underlying model to use. */
+  model?: SummarizeRequestModel;
   /** Output format — flowing paragraph or bullet list. */
   format?: SummarizeRequestFormat;
-  /** Tone of the summary. */
-  tone?: SummarizeRequestTone;
+  /**
+   * Beam search width (mT5-base only). Higher = better quality, slower.
+   * @minimum 1
+   * @maximum 8
+   */
+  numBeams?: number;
+  /**
+   * Maximum tokens to generate (mT5-base only).
+   * @minimum 32
+   * @maximum 1024
+   */
+  maxNewTokens?: number;
+  /**
+   * Maximum summary length in tokens (gemma-4-4b only).
+   * @minimum 64
+   * @maximum 1024
+   */
+  maxLength?: number;
 }

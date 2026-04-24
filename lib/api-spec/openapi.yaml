@@ -74,21 +74,34 @@ components:
           minLength: 50
           maxLength: 50000
           description: The source text to summarize.
-        length:
+        model:
           type: string
-          enum: [short, medium, long]
-          default: medium
-          description: Approximate desired length of the summary.
+          enum: [mt5-base, gemma-4-4b]
+          default: mt5-base
+          description: Which underlying model to use.
         format:
           type: string
           enum: [paragraph, bullets]
           default: paragraph
           description: Output format — flowing paragraph or bullet list.
-        tone:
-          type: string
-          enum: [neutral, formal, casual, academic]
-          default: neutral
-          description: Tone of the summary.
+        numBeams:
+          type: integer
+          minimum: 1
+          maximum: 8
+          default: 4
+          description: Beam search width (mT5-base only). Higher = better quality, slower.
+        maxNewTokens:
+          type: integer
+          minimum: 32
+          maximum: 1024
+          default: 256
+          description: Maximum tokens to generate (mT5-base only).
+        maxLength:
+          type: integer
+          minimum: 64
+          maximum: 1024
+          default: 512
+          description: Maximum summary length in tokens (gemma-4-4b only).
       required:
         - text
     SummarizeResponse:
@@ -100,12 +113,8 @@ components:
         format:
           type: string
           enum: [paragraph, bullets]
-        length:
+        model:
           type: string
-          enum: [short, medium, long]
-        tone:
-          type: string
-          enum: [neutral, formal, casual, academic]
         sourceWordCount:
           type: integer
         summaryWordCount:
@@ -113,19 +122,15 @@ components:
         compressionRatio:
           type: number
           description: summaryWordCount / sourceWordCount
-        model:
-          type: string
         durationMs:
           type: integer
       required:
         - summary
         - format
-        - length
-        - tone
+        - model
         - sourceWordCount
         - summaryWordCount
         - compressionRatio
-        - model
         - durationMs
     ErrorResponse:
       type: object

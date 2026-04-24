@@ -6,19 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SummarizeResponseFormat } from "./summarizeResponseFormat";
-import type { SummarizeResponseLength } from "./summarizeResponseLength";
-import type { SummarizeResponseTone } from "./summarizeResponseTone";
 
 export interface SummarizeResponse {
   /** The generated summary. */
   summary: string;
   format: SummarizeResponseFormat;
-  length: SummarizeResponseLength;
-  tone: SummarizeResponseTone;
+  model: string;
   sourceWordCount: number;
   summaryWordCount: number;
   /** summaryWordCount / sourceWordCount */
   compressionRatio: number;
-  model: string;
   durationMs: number;
 }

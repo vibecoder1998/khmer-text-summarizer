@@ -10,15 +10,14 @@ export interface HealthStatus {
 }
 
 /**
- * Approximate desired length of the summary.
+ * Which underlying model to use.
  */
-export type SummarizeRequestLength =
-  (typeof SummarizeRequestLength)[keyof typeof SummarizeRequestLength];
+export type SummarizeRequestModel =
+  (typeof SummarizeRequestModel)[keyof typeof SummarizeRequestModel];
 
-export const SummarizeRequestLength = {
-  short: "short",
-  medium: "medium",
-  long: "long",
+export const SummarizeRequestModel = {
+  "mt5-base": "mt5-base",
+  "gemma-4-4b": "gemma-4-4b",
 } as const;
 
 /**
@@ -32,19 +31,6 @@ export const SummarizeRequestFormat = {
   bullets: "bullets",
 } as const;
 
-/**
- * Tone of the summary.
- */
-export type SummarizeRequestTone =
-  (typeof SummarizeRequestTone)[keyof typeof SummarizeRequestTone];
-
-export const SummarizeRequestTone = {
-  neutral: "neutral",
-  formal: "formal",
-  casual: "casual",
-  academic: "academic",
-} as const;
-
 export interface SummarizeRequest {
   /**
    * The source text to summarize.
@@ -52,12 +38,28 @@ export interface SummarizeRequest {
    * @maxLength 50000
    */
   text: string;
-  /** Approximate desired length of the summary. */
-  length?: SummarizeRequestLength;
+  /** Which underlying model to use. */
+  model?: SummarizeRequestModel;
   /** Output format — flowing paragraph or bullet list. */
   format?: SummarizeRequestFormat;
-  /** Tone of the summary. */
-  tone?: SummarizeRequestTone;
+  /**
+   * Beam search width (mT5-base only). Higher = better quality, slower.
+   * @minimum 1
+   * @maximum 8
+   */
+  numBeams?: number;
+  /**
+   * Maximum tokens to generate (mT5-base only).
+   * @minimum 32
+   * @maximum 1024
+   */
+  maxNewTokens?: number;
+  /**
+   * Maximum summary length in tokens (gemma-4-4b only).
+   * @minimum 64
+   * @maximum 1024
+   */
+  maxLength?: number;
 }
 
 export type SummarizeResponseFormat =
@@ -68,36 +70,15 @@ export const SummarizeResponseFormat = {
   bullets: "bullets",
 } as const;
 
-export type SummarizeResponseLength =
-  (typeof SummarizeResponseLength)[keyof typeof SummarizeResponseLength];
-
-export const SummarizeResponseLength = {
-  short: "short",
-  medium: "medium",
-  long: "long",
-} as const;
-
-export type SummarizeResponseTone =
-  (typeof SummarizeResponseTone)[keyof typeof SummarizeResponseTone];
-
-export const SummarizeResponseTone = {
-  neutral: "neutral",
-  formal: "formal",
-  casual: "casual",
-  academic: "academic",
-} as const;
-
 export interface SummarizeResponse {
   /** The generated summary. */
   summary: string;
   format: SummarizeResponseFormat;
-  length: SummarizeResponseLength;
-  tone: SummarizeResponseTone;
+  model: string;
   sourceWordCount: number;
   summaryWordCount: number;
   /** summaryWordCount / sourceWordCount */
   compressionRatio: number;
-  model: string;
   durationMs: number;
 }
 

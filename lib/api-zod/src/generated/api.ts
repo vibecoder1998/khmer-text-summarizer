@@ -22,9 +22,18 @@ export const HealthCheckResponse = zod.object({
 export const summarizeTextBodyTextMin = 50;
 export const summarizeTextBodyTextMax = 50000;
 
-export const summarizeTextBodyLengthDefault = `medium`;
+export const summarizeTextBodyModelDefault = `mt5-base`;
 export const summarizeTextBodyFormatDefault = `paragraph`;
-export const summarizeTextBodyToneDefault = `neutral`;
+export const summarizeTextBodyNumBeamsDefault = 4;
+export const summarizeTextBodyNumBeamsMax = 8;
+
+export const summarizeTextBodyMaxNewTokensDefault = 256;
+export const summarizeTextBodyMaxNewTokensMin = 32;
+export const summarizeTextBodyMaxNewTokensMax = 1024;
+
+export const summarizeTextBodyMaxLengthDefault = 512;
+export const summarizeTextBodyMaxLengthMin = 64;
+export const summarizeTextBodyMaxLengthMax = 1024;
 
 export const SummarizeTextBody = zod.object({
   text: zod
@@ -32,30 +41,44 @@ export const SummarizeTextBody = zod.object({
     .min(summarizeTextBodyTextMin)
     .max(summarizeTextBodyTextMax)
     .describe("The source text to summarize."),
-  length: zod
-    .enum(["short", "medium", "long"])
-    .default(summarizeTextBodyLengthDefault)
-    .describe("Approximate desired length of the summary."),
+  model: zod
+    .enum(["mt5-base", "gemma-4-4b"])
+    .default(summarizeTextBodyModelDefault)
+    .describe("Which underlying model to use."),
   format: zod
     .enum(["paragraph", "bullets"])
     .default(summarizeTextBodyFormatDefault)
     .describe("Output format — flowing paragraph or bullet list."),
-  tone: zod
-    .enum(["neutral", "formal", "casual", "academic"])
-    .default(summarizeTextBodyToneDefault)
-    .describe("Tone of the summary."),
+  numBeams: zod
+    .number()
+    .min(1)
+    .max(summarizeTextBodyNumBeamsMax)
+    .default(summarizeTextBodyNumBeamsDefault)
+    .describe(
+      "Beam search width (mT5-base only). Higher = better quality, slower.",
+    ),
+  maxNewTokens: zod
+    .number()
+    .min(summarizeTextBodyMaxNewTokensMin)
+    .max(summarizeTextBodyMaxNewTokensMax)
+    .default(summarizeTextBodyMaxNewTokensDefault)
+    .describe("Maximum tokens to generate (mT5-base only)."),
+  maxLength: zod
+    .number()
+    .min(summarizeTextBodyMaxLengthMin)
+    .max(summarizeTextBodyMaxLengthMax)
+    .default(summarizeTextBodyMaxLengthDefault)
+    .describe("Maximum summary length in tokens (gemma-4-4b only)."),
 });
 
 export const SummarizeTextResponse = zod.object({
   summary: zod.string().describe("The generated summary."),
   format: zod.enum(["paragraph", "bullets"]),
-  length: zod.enum(["short", "medium", "long"]),
-  tone: zod.enum(["neutral", "formal", "casual", "academic"]),
+  model: zod.string(),
   sourceWordCount: zod.number(),
   summaryWordCount: zod.number(),
   compressionRatio: zod
     .number()
     .describe("summaryWordCount \/ sourceWordCount"),
-  model: zod.string(),
   durationMs: zod.number(),
 });

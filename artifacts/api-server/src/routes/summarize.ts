@@ -4,20 +4,11 @@ import { SummarizeTextBody, SummarizeTextResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-type SummarizeBody = {
-  text: string;
-  length?: "short" | "medium" | "long";
-  format?: "paragraph" | "bullets";
-  tone?: "neutral" | "formal" | "casual" | "academic";
-};
+type ModelId = "mt5-base" | "gemma-4-4b";
 
-const HF_SPACE = "lonewolf168/khmer-text-summarizer";
-const MODEL = `hf:${HF_SPACE}`;
-
-const LENGTH_TO_MAX_TOKENS: Record<NonNullable<SummarizeBody["length"]>, number> = {
-  short: 128,
-  medium: 256,
-  long: 512,
+const SPACES: Record<ModelId, string> = {
+  "mt5-base": "taravirak/khmer-text-summarizer",
+  "gemma-4-4b": "lonewolf168/khmer-text-summarizer",
 };
 
 function countWords(text: string): number {
@@ -35,15 +26,17 @@ function toBullets(text: string): string {
   return sentences.map((s) => `- ${s}`).join("\n");
 }
 
-let clientPromise: Promise<Client> | null = null;
-function getClient(): Promise<Client> {
-  if (!clientPromise) {
-    clientPromise = Client.connect(HF_SPACE).catch((err) => {
-      clientPromise = null;
+const clientCache = new Map<ModelId, Promise<Client>>();
+function getClient(model: ModelId): Promise<Client> {
+  let p = clientCache.get(model);
+  if (!p) {
+    p = Client.connect(SPACES[model]).catch((err) => {
+      clientCache.delete(model);
       throw err;
     });
+    clientCache.set(model, p);
   }
-  return clientPromise;
+  return p;
 }
 
 router.post("/summarize", async (req: Request, res: Response) => {
@@ -56,37 +49,45 @@ router.post("/summarize", async (req: Request, res: Response) => {
       error: "invalid_request",
       message:
         parseResult.error.issues[0]?.message ??
-        "Invalid request body. Provide `text` (50-50000 chars) and optional `length`, `format`, `tone`.",
+        "Invalid request body. Provide `text` (50-50000 chars) and optional model parameters.",
     });
     return;
   }
 
-  const body: Required<SummarizeBody> = {
-    text: parseResult.data.text,
-    length: parseResult.data.length ?? "medium",
-    format: parseResult.data.format ?? "paragraph",
-    tone: parseResult.data.tone ?? "neutral",
-  };
-
-  const maxLength = LENGTH_TO_MAX_TOKENS[body.length];
+  const data = parseResult.data;
+  const model: ModelId = (data.model ?? "mt5-base") as ModelId;
+  const format = data.format ?? "paragraph";
 
   try {
-    const client = await getClient();
-    const result = await client.predict("/summarize", {
-      text: body.text,
-      max_length: maxLength,
-    });
+    const client = await getClient(model);
 
-    const data = result.data as unknown;
+    let result: { data: unknown };
+    if (model === "mt5-base") {
+      const numBeams = data.numBeams ?? 4;
+      const maxNewTokens = data.maxNewTokens ?? 256;
+      result = await client.predict("/summarize", {
+        article: data.text,
+        num_beams: numBeams,
+        max_new_tokens: maxNewTokens,
+      });
+    } else {
+      const maxLength = data.maxLength ?? 512;
+      result = await client.predict("/summarize", {
+        text: data.text,
+        max_length: maxLength,
+      });
+    }
+
+    const raw = result.data as unknown;
     let summary = "";
-    if (Array.isArray(data) && typeof data[0] === "string") {
-      summary = data[0].trim();
-    } else if (typeof data === "string") {
-      summary = data.trim();
+    if (Array.isArray(raw) && typeof raw[0] === "string") {
+      summary = raw[0].trim();
+    } else if (typeof raw === "string") {
+      summary = raw.trim();
     }
 
     if (!summary) {
-      req.log.error({ data }, "Empty summary returned by model");
+      req.log.error({ raw }, "Empty summary returned by model");
       res.status(502).json({
         error: "empty_summary",
         message: "The model did not return a summary. Please try again.",
@@ -94,11 +95,11 @@ router.post("/summarize", async (req: Request, res: Response) => {
       return;
     }
 
-    if (body.format === "bullets") {
+    if (format === "bullets") {
       summary = toBullets(summary);
     }
 
-    const sourceWordCount = countWords(body.text);
+    const sourceWordCount = countWords(data.text);
     const summaryWordCount = countWords(summary);
     const compressionRatio =
       sourceWordCount > 0
@@ -108,13 +109,11 @@ router.post("/summarize", async (req: Request, res: Response) => {
 
     const payload = SummarizeTextResponse.parse({
       summary,
-      format: body.format,
-      length: body.length,
-      tone: body.tone,
+      format,
+      model,
       sourceWordCount,
       summaryWordCount,
       compressionRatio,
-      model: MODEL,
       durationMs,
     });
 

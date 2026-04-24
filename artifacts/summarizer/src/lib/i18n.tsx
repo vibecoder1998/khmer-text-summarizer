@@ -14,18 +14,20 @@ type Dict = {
   words: (n: string) => string;
   needAtLeast: (n: number) => string;
   tooLong: string;
-  length: string;
+  model: string;
+  modelMt5: string;
+  modelMt5Desc: string;
+  modelGemma: string;
+  modelGemmaDesc: string;
   format: string;
-  tone: string;
-  short: string;
-  medium: string;
-  long: string;
   paragraph: string;
   bullets: string;
-  neutral: string;
-  formal: string;
-  casual: string;
-  academic: string;
+  numBeams: string;
+  numBeamsHint: string;
+  maxNewTokens: string;
+  maxNewTokensHint: string;
+  maxLength: string;
+  maxLengthHint: string;
   summarize: string;
   distilling: string;
   failed: string;
@@ -68,18 +70,20 @@ const km: Dict = {
   words: (n) => `${n} ពាក្យ`,
   needAtLeast: (n) => `ត្រូវការយ៉ាងតិច ${n} តួអក្សរ`,
   tooLong: "អត្ថបទវែងពេក",
-  length: "ប្រវែង",
+  model: "ម៉ូដែល",
+  modelMt5: "mT5-base",
+  modelMt5Desc: "លឿន · គុណភាពល្អ",
+  modelGemma: "Gemma-4-4B",
+  modelGemmaDesc: "យឺត · គុណភាពខ្ពស់",
   format: "ទម្រង់",
-  tone: "សំនៀង",
-  short: "ខ្លី",
-  medium: "មធ្យម",
-  long: "វែង",
   paragraph: "កថាខណ្ឌ",
   bullets: "ចំណុច",
-  neutral: "អព្យាក្រឹត",
-  formal: "ផ្លូវការ",
-  casual: "ធម្មតា",
-  academic: "សិក្សា",
+  numBeams: "កម្រិត Beam",
+  numBeamsHint: "ខ្ពស់ = គុណភាពល្អ យឺតជាង",
+  maxNewTokens: "ប្រវែងអតិបរមា",
+  maxNewTokensHint: "ចំនួន token អតិបរមាក្នុងការសង្ខេប",
+  maxLength: "ប្រវែងអតិបរមា",
+  maxLengthHint: "ចំនួន token អតិបរមាក្នុងការសង្ខេប",
   summarize: "សង្ខេប",
   distilling: "កំពុងបំបែក...",
   failed: "បរាជ័យក្នុងការសង្ខេប។ សូមព្យាយាមម្តងទៀត។",
@@ -125,18 +129,20 @@ const en: Dict = {
   words: (n) => `${n} words`,
   needAtLeast: (n) => `Need at least ${n} characters`,
   tooLong: "Text is too long",
-  length: "Length",
+  model: "Model",
+  modelMt5: "mT5-base",
+  modelMt5Desc: "Fast · Good quality",
+  modelGemma: "Gemma-4-4B",
+  modelGemmaDesc: "Slow · High quality",
   format: "Format",
-  tone: "Tone",
-  short: "Short",
-  medium: "Medium",
-  long: "Long",
   paragraph: "Paragraph",
   bullets: "Bullets",
-  neutral: "Neutral",
-  formal: "Formal",
-  casual: "Casual",
-  academic: "Academic",
+  numBeams: "Beam width",
+  numBeamsHint: "Higher = better quality, slower",
+  maxNewTokens: "Max length",
+  maxNewTokensHint: "Maximum tokens in summary",
+  maxLength: "Max length",
+  maxLengthHint: "Maximum tokens in summary",
   summarize: "Summarize",
   distilling: "Distilling...",
   failed: "Failed to summarize. Please try again.",
