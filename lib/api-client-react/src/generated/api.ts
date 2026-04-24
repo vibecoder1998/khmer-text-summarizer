@@ -18,6 +18,8 @@ import type {
 
 import type {
   ErrorResponse,
+  ExtractUrlRequest,
+  ExtractedArticle,
   HealthStatus,
   SummarizeRequest,
   SummarizeResponse,
@@ -107,6 +109,93 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Fetches a web page and extracts its main article text using Readability.
+ * @summary Extract readable text from a URL
+ */
+export const getExtractUrlUrl = () => {
+  return `/api/extract-url`;
+};
+
+export const extractUrl = async (
+  extractUrlRequest: ExtractUrlRequest,
+  options?: RequestInit,
+): Promise<ExtractedArticle> => {
+  return customFetch<ExtractedArticle>(getExtractUrlUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(extractUrlRequest),
+  });
+};
+
+export const getExtractUrlMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof extractUrl>>,
+    TError,
+    { data: BodyType<ExtractUrlRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof extractUrl>>,
+  TError,
+  { data: BodyType<ExtractUrlRequest> },
+  TContext
+> => {
+  const mutationKey = ["extractUrl"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof extractUrl>>,
+    { data: BodyType<ExtractUrlRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return extractUrl(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ExtractUrlMutationResult = NonNullable<
+  Awaited<ReturnType<typeof extractUrl>>
+>;
+export type ExtractUrlMutationBody = BodyType<ExtractUrlRequest>;
+export type ExtractUrlMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Extract readable text from a URL
+ */
+export const useExtractUrl = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof extractUrl>>,
+    TError,
+    { data: BodyType<ExtractUrlRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof extractUrl>>,
+  TError,
+  { data: BodyType<ExtractUrlRequest> },
+  TContext
+> => {
+  return useMutation(getExtractUrlMutationOptions(options));
+};
 
 /**
  * Generates a concise summary of the provided text using an AI model.

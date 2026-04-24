@@ -16,6 +16,23 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
+ * Fetches a web page and extracts its main article text using Readability.
+ * @summary Extract readable text from a URL
+ */
+export const ExtractUrlBody = zod.object({
+  url: zod.string().url().describe("HTTP(S) URL of the page to extract."),
+});
+
+export const ExtractUrlResponse = zod.object({
+  title: zod.string().optional(),
+  text: zod.string().describe("Extracted plain text content."),
+  siteName: zod.string().optional(),
+  excerpt: zod.string().optional(),
+  url: zod.string(),
+  wordCount: zod.number(),
+});
+
+/**
  * Generates a concise summary of the provided text using an AI model.
  * @summary Summarize text
  */

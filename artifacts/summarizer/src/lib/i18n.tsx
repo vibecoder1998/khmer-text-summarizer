@@ -55,6 +55,25 @@ type Dict = {
   switchLang: string;
   htmlTitle: string;
   htmlDesc: string;
+  modeText: string;
+  modeUrl: string;
+  modePdf: string;
+  modeImage: string;
+  urlPlaceholder: string;
+  fetchUrl: string;
+  fetching: string;
+  urlFetched: string;
+  urlFetchFailed: string;
+  pdfDrop: string;
+  pdfHint: string;
+  pdfDone: string;
+  imageDrop: string;
+  imageHint: string;
+  imageDone: string;
+  processing: string;
+  ocrFailed: string;
+  ocrEmpty: string;
+  ocrEmptyDesc: string;
 };
 
 const km: Dict = {
@@ -114,6 +133,25 @@ const km: Dict = {
   htmlTitle: "ខ្លឹម — សង្ខេបអត្ថបទច្បាស់លាស់",
   htmlDesc:
     "ឧបករណ៍ស្អាតផ្តោតសម្រាប់ប្រែការសរសេរវែងទៅជាការសង្ខេបច្បាស់លាស់។",
+  modeText: "អត្ថបទ",
+  modeUrl: "តំណ",
+  modePdf: "PDF",
+  modeImage: "រូបភាព",
+  urlPlaceholder: "https://example.com/article",
+  fetchUrl: "ទាញយក",
+  fetching: "កំពុងទាញយក...",
+  urlFetched: "បានទាញយកអត្ថបទរួចរាល់",
+  urlFetchFailed: "ទាញយកតំណមិនបាន",
+  pdfDrop: "ជ្រើសរើសឯកសារ PDF",
+  pdfHint: "ស្គាល់អក្សរខ្មែរដោយស្វ័យប្រវត្តិ",
+  pdfDone: "បានស្រង់អត្ថបទពី PDF",
+  imageDrop: "ជ្រើសរើសរូបភាព",
+  imageHint: "JPG · PNG · WebP — ស្គាល់អក្សរខ្មែរ",
+  imageDone: "បានស្រង់អត្ថបទពីរូបភាព",
+  processing: "កំពុងដំណើរការ...",
+  ocrFailed: "ស្គាល់អក្សរមិនបាន",
+  ocrEmpty: "មិនបានរកឃើញអក្សរ",
+  ocrEmptyDesc: "សូមសាកល្បងជាមួយឯកសារ ឬរូបភាពច្បាស់ជាងនេះ។",
 };
 
 const en: Dict = {
@@ -172,6 +210,25 @@ const en: Dict = {
   switchLang: "ខ្មែរ",
   htmlTitle: "ខ្លឹម — Clear, focused text summarization",
   htmlDesc: "A clean, focused tool for turning long writing into clear summaries.",
+  modeText: "Text",
+  modeUrl: "URL",
+  modePdf: "PDF",
+  modeImage: "Image",
+  urlPlaceholder: "https://example.com/article",
+  fetchUrl: "Fetch",
+  fetching: "Fetching...",
+  urlFetched: "Article fetched",
+  urlFetchFailed: "Failed to fetch URL",
+  pdfDrop: "Choose a PDF file",
+  pdfHint: "Khmer text recognized automatically",
+  pdfDone: "Text extracted from PDF",
+  imageDrop: "Choose an image",
+  imageHint: "JPG · PNG · WebP — Khmer OCR",
+  imageDone: "Text extracted from image",
+  processing: "Processing...",
+  ocrFailed: "OCR failed",
+  ocrEmpty: "No text found",
+  ocrEmptyDesc: "Try a clearer document or image.",
 };
 
 const dicts: Record<Locale, Dict> = { km, en };

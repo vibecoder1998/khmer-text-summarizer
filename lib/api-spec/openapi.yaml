@@ -26,6 +26,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /extract-url:
+    post:
+      operationId: extractUrl
+      tags: [summarize]
+      summary: Extract readable text from a URL
+      description: Fetches a web page and extracts its main article text using Readability.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtractUrlRequest"
+      responses:
+        "200":
+          description: Extracted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtractedArticle"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Failed to fetch or parse URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /summarize:
     post:
       operationId: summarizeText
@@ -132,6 +163,35 @@ components:
         - summaryWordCount
         - compressionRatio
         - durationMs
+    ExtractUrlRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          description: HTTP(S) URL of the page to extract.
+      required:
+        - url
+    ExtractedArticle:
+      type: object
+      properties:
+        title:
+          type: string
+        text:
+          type: string
+          description: Extracted plain text content.
+        siteName:
+          type: string
+        excerpt:
+          type: string
+        url:
+          type: string
+        wordCount:
+          type: integer
+      required:
+        - text
+        - url
+        - wordCount
     ErrorResponse:
       type: object
       properties:

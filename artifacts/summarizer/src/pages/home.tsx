@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Copy, Trash2, ArrowRight, Loader2, Type, AlignLeft, Sparkles, Clock, HardDrive, FileText, SplitSquareHorizontal, Cpu, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
+import { InputSource, type InputMode } from "@/components/input-source";
 
 const MIN_CHARS = 50;
 const MAX_CHARS = 50000;
@@ -20,6 +21,7 @@ export default function Home() {
   const { t } = useI18n();
 
   const [text, setText] = useState("");
+  const [inputMode, setInputMode] = useState<InputMode>("text");
   const [model, setModel] = useState<SummarizeRequestModel>("mt5-base");
   const [format, setFormat] = useState<SummarizeRequestFormat>("paragraph");
   const [numBeams, setNumBeams] = useState<number>(4);
@@ -100,6 +102,12 @@ export default function Home() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-6 lg:gap-8 items-start">
           <div className="flex flex-col gap-4">
+            <InputSource
+              mode={inputMode}
+              onModeChange={setInputMode}
+              onTextExtracted={(extracted) => setText(extracted)}
+            />
+
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-foreground flex justify-between">
                 <span>{t.sourceText}</span>
@@ -112,7 +120,7 @@ export default function Home() {
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder={t.placeholder}
-                  className={`min-h-[400px] lg:min-h-[500px] resize-y p-6 text-base leading-relaxed bg-card text-card-foreground shadow-sm transition-all border ${isOverLimit ? 'border-destructive focus-visible:ring-destructive' : 'focus-visible:ring-primary'}`}
+                  className={`min-h-[360px] lg:min-h-[440px] resize-y p-6 text-base leading-relaxed bg-card text-card-foreground shadow-sm transition-all border ${isOverLimit ? 'border-destructive focus-visible:ring-destructive' : 'focus-visible:ring-primary'}`}
                 />
                 {text.length > 0 && (
                   <Button

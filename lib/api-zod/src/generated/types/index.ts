@@ -7,6 +7,8 @@
  */
 
 export * from "./errorResponse";
+export * from "./extractedArticle";
+export * from "./extractUrlRequest";
 export * from "./healthStatus";
 export * from "./summarizeRequest";
 export * from "./summarizeRequestFormat";

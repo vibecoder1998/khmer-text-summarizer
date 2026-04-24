@@ -82,6 +82,21 @@ export interface SummarizeResponse {
   durationMs: number;
 }
 
+export interface ExtractUrlRequest {
+  /** HTTP(S) URL of the page to extract. */
+  url: string;
+}
+
+export interface ExtractedArticle {
+  title?: string;
+  /** Extracted plain text content. */
+  text: string;
+  siteName?: string;
+  excerpt?: string;
+  url: string;
+  wordCount: number;
+}
+
 export interface ErrorResponse {
   error: string;
   message: string;
