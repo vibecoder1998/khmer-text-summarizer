@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { useSummarizeText } from "@workspace/api-client-react";
@@ -8,10 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
-import { Copy, Trash2, ArrowRight, Loader2, Type, AlignLeft, Sparkles, Clock, HardDrive, FileText, SplitSquareHorizontal, Cpu, Zap } from "lucide-react";
+import { Copy, Trash2, ArrowRight, Loader2, Type, AlignLeft, Sparkles, Clock, HardDrive, FileText, SplitSquareHorizontal, Cpu, Zap, Download, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 import { InputSource, type InputMode } from "@/components/input-source";
+import { HistoryPanel } from "@/components/history-panel";
+import { useHistory, type HistoryItem } from "@/lib/history";
 
 const MIN_CHARS = 50;
 const MAX_CHARS = 50000;
@@ -29,6 +31,25 @@ export default function Home() {
   const [maxLength, setMaxLength] = useState<number>(512);
 
   const { mutate: summarize, data: result, isPending, error } = useSummarizeText();
+  const { add: addHistory } = useHistory();
+  const lastSavedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!result?.summary) return;
+    const key = `${result.summary}-${result.model}-${result.durationMs}`;
+    if (lastSavedRef.current === key) return;
+    lastSavedRef.current = key;
+    addHistory({
+      sourceText: text,
+      summary: result.summary,
+      format: result.format,
+      model: result.model,
+      sourceWordCount: result.sourceWordCount,
+      summaryWordCount: result.summaryWordCount,
+      compressionRatio: result.compressionRatio,
+      durationMs: result.durationMs,
+    });
+  }, [result, addHistory, text]);
 
   const handleSummarize = () => {
     if (text.length < MIN_CHARS) {
@@ -59,6 +80,49 @@ export default function Home() {
     if (result?.summary) {
       navigator.clipboard.writeText(result.summary);
       toast({ title: t.copied, description: t.copiedDesc });
+    }
+  };
+
+  const handleDownload = () => {
+    if (!result?.summary) return;
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const blob = new Blob([result.summary], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `khlim-summary-${stamp}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: t.downloaded, description: t.downloadedDesc });
+  };
+
+  const handleShare = async () => {
+    if (!result?.summary) return;
+    const data = { title: t.shareTitle, text: result.summary };
+    try {
+      if (typeof navigator !== "undefined" && "share" in navigator && (navigator as Navigator).canShare?.(data) !== false) {
+        await (navigator as Navigator).share(data);
+        toast({ title: t.shared, description: t.sharedDesc });
+        return;
+      }
+    } catch (err) {
+      if ((err as DOMException)?.name === "AbortError") return;
+    }
+    try {
+      await navigator.clipboard.writeText(result.summary);
+      toast({ title: t.copied, description: t.copiedDesc });
+    } catch {
+      toast({ title: t.failed, variant: "destructive" });
+    }
+  };
+
+  const handleRestore = (item: HistoryItem) => {
+    setText(item.sourceText);
+    setInputMode("text");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -286,10 +350,20 @@ export default function Home() {
             <div className="flex justify-between items-center">
               <label className="text-sm font-medium text-foreground">{t.summary}</label>
               {result && !isPending && (
-                <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground hover:text-foreground" onClick={handleCopy}>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span className="text-xs font-medium">{t.copy}</span>
-                </Button>
+                <div className="flex items-center gap-0.5">
+                  <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground hover:text-foreground" onClick={handleCopy} title={t.copy}>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium hidden sm:inline">{t.copy}</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground hover:text-foreground" onClick={handleDownload} title={t.download}>
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium hidden sm:inline">{t.download}</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground hover:text-foreground" onClick={handleShare} title={t.share}>
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium hidden sm:inline">{t.share}</span>
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -372,6 +446,8 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        <HistoryPanel onRestore={handleRestore} />
 
         <section className="mt-12 py-12 border-t border-border/40">
           <div className="max-w-3xl mx-auto">

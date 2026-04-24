@@ -74,6 +74,24 @@ type Dict = {
   ocrFailed: string;
   ocrEmpty: string;
   ocrEmptyDesc: string;
+  download: string;
+  downloaded: string;
+  downloadedDesc: string;
+  share: string;
+  shared: string;
+  sharedDesc: string;
+  shareTitle: string;
+  history: string;
+  historyEmpty: string;
+  historyEmptyDesc: string;
+  historyClear: string;
+  historyConfirmClear: string;
+  historyRestore: string;
+  historyDelete: string;
+  justNow: string;
+  minutesAgo: (n: number) => string;
+  hoursAgo: (n: number) => string;
+  daysAgo: (n: number) => string;
 };
 
 const km: Dict = {
@@ -152,6 +170,24 @@ const km: Dict = {
   ocrFailed: "ស្គាល់អក្សរមិនបាន",
   ocrEmpty: "មិនបានរកឃើញអក្សរ",
   ocrEmptyDesc: "សូមសាកល្បងជាមួយឯកសារ ឬរូបភាពច្បាស់ជាងនេះ។",
+  download: "ទាញយក",
+  downloaded: "បានទាញយក",
+  downloadedDesc: "សង្ខេបត្រូវបានរក្សាទុកជាឯកសារ។",
+  share: "ចែករំលែក",
+  shared: "បានចែករំលែក",
+  sharedDesc: "សង្ខេបត្រូវបានចែករំលែក ឬចម្លងទៅឃ្លីបបត។",
+  shareTitle: "សង្ខេបពី ខ្លឹម",
+  history: "ប្រវត្តិ",
+  historyEmpty: "មិនទាន់មានសង្ខេប",
+  historyEmptyDesc: "សង្ខេបរបស់អ្នកនឹងបង្ហាញនៅទីនេះ។",
+  historyClear: "សម្អាតទាំងអស់",
+  historyConfirmClear: "លុបប្រវត្តិសង្ខេបទាំងអស់?",
+  historyRestore: "បើកឡើងវិញ",
+  historyDelete: "លុប",
+  justNow: "ទើបនឹងតែ",
+  minutesAgo: (n) => `${n} នាទីមុន`,
+  hoursAgo: (n) => `${n} ម៉ោងមុន`,
+  daysAgo: (n) => `${n} ថ្ងៃមុន`,
 };
 
 const en: Dict = {
@@ -229,6 +265,24 @@ const en: Dict = {
   ocrFailed: "OCR failed",
   ocrEmpty: "No text found",
   ocrEmptyDesc: "Try a clearer document or image.",
+  download: "Download",
+  downloaded: "Downloaded",
+  downloadedDesc: "Summary saved as a file.",
+  share: "Share",
+  shared: "Shared",
+  sharedDesc: "Summary shared or copied to clipboard.",
+  shareTitle: "Summary from ខ្លឹម",
+  history: "History",
+  historyEmpty: "No summaries yet",
+  historyEmptyDesc: "Your past summaries will appear here.",
+  historyClear: "Clear all",
+  historyConfirmClear: "Delete all summary history?",
+  historyRestore: "Restore",
+  historyDelete: "Delete",
+  justNow: "just now",
+  minutesAgo: (n) => `${n}m ago`,
+  hoursAgo: (n) => `${n}h ago`,
+  daysAgo: (n) => `${n}d ago`,
 };
 
 const dicts: Record<Locale, Dict> = { km, en };
