@@ -1,5 +1,5 @@
-import { Client } from "@gradio/client";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { gradioCall, gradioStream } from "./gradio-direct";
 
 export type GradioModelId = "mt5-base" | "gemma-4-4b";
 export type ModelId = GradioModelId | "gemini";
@@ -29,6 +29,18 @@ export function toBullets(text: string): string {
   return sentences.map((s) => `- ${s}`).join("\n");
 }
 
+/**
+ * Canonical, ordered list of Khmer headings used for meeting-minutes mode
+ * across all three models. Single source of truth — the Gemini prompt and
+ * the bold-cleanup step both read from here.
+ */
+export const MEETING_HEADINGS = [
+  "ចំណុចពិភាក្សា",
+  "សេចក្តីសម្រេចចិត្ត",
+  "ភារកិច្ចដែលត្រូវធ្វើ",
+  "ជំហានបន្ទាប់",
+] as const;
+
 export function toMeetingMinutes(text: string, format: Format): string {
   const sentences = text
     .split(/(?<=[។?!])\s+|\n+/)
@@ -40,35 +52,70 @@ export function toMeetingMinutes(text: string, format: Format): string {
   const q2 = Math.ceil(total * 0.7);
   const q3 = Math.ceil(total * 0.85);
 
-  const sections: [string, string[]][] = [
-    ["ចំណុចពិភាក្សា", sentences.slice(0, q1)],
-    ["សេចក្តីសម្រេចចិត្ត", sentences.slice(q1, q2)],
-    ["ភារកិច្ចដែលត្រូវធ្វើ", sentences.slice(q2, q3)],
-    ["ជំហានបន្ទាប់", sentences.slice(q3)],
-  ].filter(([, items]) => (items as string[]).length > 0) as [string, string[]][];
+  const slices: string[][] = [
+    sentences.slice(0, q1),
+    sentences.slice(q1, q2),
+    sentences.slice(q2, q3),
+    sentences.slice(q3),
+  ];
 
-  return sections
-    .map(([heading, items]) => {
-      const body =
-        format === "bullets"
-          ? (items as string[]).map((s) => `  - ${s}`).join("\n")
-          : (items as string[]).join(" ");
-      return `**${heading}**\n${body}`;
-    })
+  return MEETING_HEADINGS.map((heading, i) => {
+    const items = slices[i];
+    if (!items?.length) return null;
+    const body =
+      format === "bullets"
+        ? items.map((s) => `  - ${s}`).join("\n")
+        : items.join(" ");
+    return `**${heading}:**\n${body}`;
+  })
+    .filter((s): s is string => s !== null)
     .join("\n\n");
 }
 
-const gradioCache = new Map<GradioModelId, Promise<Client>>();
-export function getGradioClient(model: GradioModelId): Promise<Client> {
-  let p = gradioCache.get(model);
-  if (!p) {
-    p = Client.connect(SPACES[model]).catch((err) => {
-      gradioCache.delete(model);
-      throw err;
-    });
-    gradioCache.set(model, p);
+function firstString(value: unknown): string {
+  if (Array.isArray(value) && typeof value[0] === "string") return value[0].trim();
+  if (typeof value === "string") return value.trim();
+  return "";
+}
+
+/**
+ * Run the mT5 summarizer Space and return the trimmed summary string.
+ * Uses the Gradio queue HTTP API directly — no SDK overhead.
+ */
+export async function summarizeWithMt5(
+  text: string,
+  numBeams: number,
+  maxNewTokens: number,
+  signal?: AbortSignal,
+): Promise<string> {
+  const out = await gradioCall(
+    SPACES["mt5-base"],
+    "/summarize",
+    [text, numBeams, maxNewTokens],
+    signal,
+  );
+  return firstString(out);
+}
+
+/**
+ * Stream the Gemma summarizer Space token-by-token. Each yielded string is
+ * the cumulative output so far (matches the Space's own behaviour).
+ */
+export async function* streamWithGemma(
+  text: string,
+  maxLength: number,
+  signal?: AbortSignal,
+): AsyncGenerator<string> {
+  const stream = gradioStream(
+    SPACES["gemma-4-4b"],
+    "/summarize",
+    [text, maxLength],
+    signal,
+  );
+  for await (const data of stream) {
+    const chunk = firstString(data);
+    if (chunk) yield chunk;
   }
-  return p;
 }
 
 export function buildGeminiPrompt(
@@ -88,19 +135,16 @@ export function buildGeminiPrompt(
       : "Format the output as flowing paragraphs with no bullet points.";
 
   if (summarizeType === "meeting-minutes") {
+    const headingTemplate = MEETING_HEADINGS.map((h) => `  **${h}:**`).join("\n");
     return `You are a professional meeting-minutes writer. Analyze the following text and produce structured meeting minutes entirely in Khmer.
-
-Use exactly these section headings (Khmer only, no English translations or brackets):
-- ចំណុចពិភាក្សា
-- សេចក្តីសម្រេចចិត្ត
-- ភារកិច្ចដែលត្រូវធ្វើ
-- ជំហានបន្ទាប់
 
 STRICT RULES:
 - Write 100% in Khmer. Zero English words, zero English letters — not even in parentheses or brackets.
 - Do NOT include any dates, metadata, or introductory lines unless they appear in the source text.
-- Do NOT use any markdown formatting: no asterisks (*), no double asterisks (**), no hashes (#), no underscores.
-- Section headings must appear on their own line as plain Khmer text followed by a colon.
+- Each section heading MUST appear on its own line in markdown bold with a trailing colon, EXACTLY in this form (do not rename, translate, or omit any heading):
+${headingTemplate}
+- Bold (** **) is reserved exclusively for those four section headings. Do NOT bold anything else.
+- Do NOT use any other markdown formatting (no hashes, no underscores, no inline code).
 - ${formatInstruction}
 - ${lengthInstruction}
 
@@ -120,8 +164,17 @@ ${text}`;
 
 export function cleanGeminiMeetingOutput(text: string, summarizeType: string): string {
   if (summarizeType !== "meeting-minutes") return text;
-  return text
-    .replace(/\*+/g, "")
+
+  // Strip any bold wrapper the model puts around non-heading text. We only
+  // want **heading:** to survive so the markdown renderer bolds exactly the
+  // four section titles.
+  const allowed = new Set<string>(MEETING_HEADINGS);
+  const cleaned = text.replace(/\*\*([^*]+?)\*\*/g, (match, inner: string) => {
+    const stripped = inner.replace(/[:\s៖]+$/u, "").trim();
+    return allowed.has(stripped) ? match : inner;
+  });
+
+  return cleaned
     .replace(/\([^)]*[a-zA-Z][^)]*\)/g, "")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")

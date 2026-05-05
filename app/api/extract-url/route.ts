@@ -5,7 +5,7 @@ import {
   ExtractUrlBody,
   ExtractUrlResponse as ExtractUrlResponseSchema,
 } from "@/lib/schemas";
-import { logger } from "@/lib/logger";
+import { logger, serializeError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -166,10 +166,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(payload);
   } catch (err) {
     logger.error(
-      {
-        err: err instanceof Error ? err.message : String(err),
-        url: url.toString(),
-      },
+      { err: serializeError(err), url: url.toString() },
       "URL extraction failed",
     );
     const message =

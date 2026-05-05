@@ -8,7 +8,8 @@ import {
   cleanGeminiMeetingOutput,
   countWords,
   getGeminiClient,
-  getGradioClient,
+  streamWithGemma,
+  summarizeWithMt5,
   toBullets,
   toMeetingMinutes,
   type Format,
@@ -16,7 +17,7 @@ import {
   type ModelId,
   type SummarizeType,
 } from "@/lib/summarize-core";
-import { logger } from "@/lib/logger";
+import { getErrorMessage, logger, serializeError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -61,39 +62,23 @@ export async function POST(req: NextRequest) {
     let summary = "";
 
     if (model === "mt5-base") {
-      const client = await getGradioClient("mt5-base");
       const numBeams = data.numBeams ?? 4;
       const maxNewTokens = data.maxNewTokens ?? 256;
-      const result = await client.predict("/summarize", {
-        article: data.text,
-        num_beams: numBeams,
-        max_new_tokens: maxNewTokens,
-      });
-      const raw = result.data as unknown;
-      if (Array.isArray(raw) && typeof raw[0] === "string") {
-        summary = raw[0].trim();
-      } else if (typeof raw === "string") {
-        summary = (raw as string).trim();
-      }
+      summary = await summarizeWithMt5(data.text, numBeams, maxNewTokens);
       if (summarizeType === "meeting-minutes") {
         summary = toMeetingMinutes(summary, format);
       } else if (format === "bullets") {
         summary = toBullets(summary);
       }
     } else if (model === "gemma-4-4b") {
-      const client = await getGradioClient("gemma-4-4b");
       const maxLength = length === "short" ? 512 : 1024;
-      const job = client.submit("/summarize", {
-        text: data.text,
-        max_length: maxLength,
-      });
-      for await (const output of job) {
-        const raw = (output as { data: unknown }).data;
-        if (Array.isArray(raw) && typeof raw[0] === "string") {
-          summary = (raw[0] as string).trim();
-        } else if (typeof raw === "string") {
-          summary = (raw as string).trim();
-        }
+      for await (const chunk of streamWithGemma(data.text, maxLength)) {
+        summary = chunk;
+      }
+      if (summarizeType === "meeting-minutes") {
+        summary = toMeetingMinutes(summary, format);
+      } else if (format === "bullets") {
+        summary = toBullets(summary);
       }
     } else {
       const apiKey = process.env.GEMINI_API_KEY;
@@ -148,16 +133,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(payload);
   } catch (err) {
     logger.error(
-      { err: err instanceof Error ? err.message : String(err) },
+      { err: serializeError(err), model },
       "Summarization failed",
     );
     return NextResponse.json(
       {
         error: "summarization_failed",
         message:
-          err instanceof Error
-            ? err.message
-            : "Failed to generate a summary. Please try again.",
+          getErrorMessage(err) ||
+          "Failed to generate a summary. Please try again.",
       },
       { status: 502 },
     );

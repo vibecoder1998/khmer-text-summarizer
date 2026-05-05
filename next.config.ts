@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ["jsdom", "@mozilla/readability", "@gradio/client"],
+  serverExternalPackages: ["jsdom", "@mozilla/readability"],
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {

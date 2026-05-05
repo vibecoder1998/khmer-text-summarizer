@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { useSummarizeText } from "@/lib/api-client";
@@ -49,56 +51,10 @@ type StreamResult = {
 const MIN_CHARS = 50;
 const MAX_CHARS = 50000;
 
-function SummaryBody({ text, format }: { text: string; format: string }) {
-  const hasSections = /^\*\*.+\*\*/m.test(text);
-
-  if (hasSections) {
-    const blocks = text.split(/\n\n+/).filter(Boolean);
-    return (
-      <div className="space-y-4 mt-0">
-        {blocks.map((block, i) => {
-          const headingMatch = block.match(/^\*\*(.+?)\*\*\n([\s\S]*)$/);
-          if (headingMatch) {
-            const heading = headingMatch[1];
-            const body = headingMatch[2].trim();
-            const lines = body.split("\n").filter((l) => l.trim());
-            return (
-              <div key={i}>
-                <p className="font-semibold text-foreground mb-1">{heading}</p>
-                {lines.length > 1 ? (
-                  <ul className="space-y-1 pl-2">
-                    {lines.map((l, j) => (
-                      <li key={j}>{l.replace(/^\s*[-*•]\s*/, "")}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-base leading-relaxed">{body}</p>
-                )}
-              </div>
-            );
-          }
-          return (
-            <p key={i} className="whitespace-pre-wrap text-base">
-              {block}
-            </p>
-          );
-        })}
-      </div>
-    );
-  }
-
-  if (format === "bullets") {
-    const lines = text.split("\n").filter((l) => l.trim());
-    return (
-      <ul className="space-y-2 mt-0">
-        {lines.map((line, i) => (
-          <li key={i}>{line.replace(/^[-*•]\s*/, "")}</li>
-        ))}
-      </ul>
-    );
-  }
-
-  return <p className="whitespace-pre-wrap mt-0 text-base">{text}</p>;
+function SummaryBody({ text }: { text: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+  );
 }
 
 export default function HomeView() {
@@ -316,14 +272,8 @@ export default function HomeView() {
   const handleClear = () => setText("");
 
   const charCount = text.length;
-  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
   const isOverLimit = charCount > MAX_CHARS;
   const isUnderLimit = charCount > 0 && charCount < MIN_CHARS;
-
-  const formatLabels: Record<SummarizeRequestFormat, string> = {
-    paragraph: t.paragraph,
-    bullets: t.bullets,
-  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans selection:bg-primary selection:text-primary-foreground">
@@ -398,13 +348,14 @@ export default function HomeView() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
-              <span>{t.words(wordCount.toLocaleString())}</span>
-              {isUnderLimit && (
-                <span className="text-destructive">{t.needAtLeast(MIN_CHARS)}</span>
-              )}
-              {isOverLimit && <span className="text-destructive">{t.tooLong}</span>}
-            </div>
+            {(isUnderLimit || isOverLimit) && (
+              <div className="flex items-center justify-end text-sm px-1">
+                {isUnderLimit && (
+                  <span className="text-destructive">{t.needAtLeast(MIN_CHARS)}</span>
+                )}
+                {isOverLimit && <span className="text-destructive">{t.tooLong}</span>}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-6 lg:pt-10 lg:w-[260px]">
@@ -462,28 +413,6 @@ export default function HomeView() {
                       </button>
                     );
                   })}
-                </div>
-              </div>
-
-              {/* Format — all models */}
-              <div className="space-y-3">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <Type className="w-3.5 h-3.5" /> {t.format}
-                </label>
-                <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
-                  {(["paragraph", "bullets"] as const).map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => setFormat(opt)}
-                      className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${
-                        format === opt
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                      }`}
-                    >
-                      {formatLabels[opt]}
-                    </button>
-                  ))}
                 </div>
               </div>
 
@@ -715,10 +644,12 @@ export default function HomeView() {
                   >
                     <div className="p-6 flex-1 overflow-y-auto prose dark:prose-invert prose-p:leading-relaxed prose-li:leading-relaxed max-w-none text-card-foreground">
                       {streamingText ? (
-                        <p className="whitespace-pre-wrap mt-0 text-base">
-                          {streamingText}
-                          <span className="inline-block w-0.5 h-4 bg-primary ml-0.5 animate-pulse align-middle" />
-                        </p>
+                        <>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {streamingText}
+                          </ReactMarkdown>
+                          <span className="inline-block w-0.5 h-4 bg-primary animate-pulse align-middle" />
+                        </>
                       ) : (
                         <div className="flex items-center gap-2 text-muted-foreground text-sm">
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -740,7 +671,7 @@ export default function HomeView() {
                     className="absolute inset-0 bg-card rounded-md border border-border shadow-sm flex flex-col"
                   >
                     <div className="p-6 flex-1 overflow-y-auto prose dark:prose-invert prose-p:leading-relaxed prose-li:leading-relaxed max-w-none text-card-foreground">
-                      <SummaryBody text={result.summary} format={result.format} />
+                      <SummaryBody text={result.summary} />
                     </div>
 
                     <div className="p-4 border-t border-border/50 bg-muted/20 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground rounded-b-md">
