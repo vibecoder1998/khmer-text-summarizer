@@ -12,6 +12,8 @@ export * from "./extractUrlRequest";
 export * from "./healthStatus";
 export * from "./summarizeRequest";
 export * from "./summarizeRequestFormat";
+export * from "./summarizeRequestLength";
 export * from "./summarizeRequestModel";
+export * from "./summarizeRequestSummarizeType";
 export * from "./summarizeResponse";
 export * from "./summarizeResponseFormat";

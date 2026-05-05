@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SummarizeRequestFormat } from "./summarizeRequestFormat";
+import type { SummarizeRequestLength } from "./summarizeRequestLength";
 import type { SummarizeRequestModel } from "./summarizeRequestModel";
+import type { SummarizeRequestSummarizeType } from "./summarizeRequestSummarizeType";
 
 export interface SummarizeRequest {
   /**
@@ -19,6 +21,10 @@ export interface SummarizeRequest {
   model?: SummarizeRequestModel;
   /** Output format — flowing paragraph or bullet list. */
   format?: SummarizeRequestFormat;
+  /** Desired summary length (gemma-4-4b and gemini only). */
+  length?: SummarizeRequestLength;
+  /** Summary style — general overview or structured meeting minutes (gemma-4-4b and gemini only). */
+  summarizeType?: SummarizeRequestSummarizeType;
   /**
    * Beam search width (mT5-base only). Higher = better quality, slower.
    * @minimum 1

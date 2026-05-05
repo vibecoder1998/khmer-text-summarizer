@@ -74,6 +74,15 @@ type Dict = {
   ocrFailed: string;
   ocrEmpty: string;
   ocrEmptyDesc: string;
+  modelGemini: string;
+  modelGeminiDesc: string;
+  length: string;
+  lengthShort: string;
+  lengthLong: string;
+  summarizeType: string;
+  typeGeneral: string;
+  typeMeeting: string;
+  geminiKeyMissing: string;
   download: string;
   downloaded: string;
   downloadedDesc: string;
@@ -170,6 +179,15 @@ const km: Dict = {
   ocrFailed: "ស្គាល់អក្សរមិនបាន",
   ocrEmpty: "មិនបានរកឃើញអក្សរ",
   ocrEmptyDesc: "សូមសាកល្បងជាមួយឯកសារ ឬរូបភាពច្បាស់ជាងនេះ។",
+  modelGemini: "Gemini",
+  modelGeminiDesc: "លឿន · AI ជំនាន់ក្រោយ",
+  length: "ប្រវែង",
+  lengthShort: "ខ្លី",
+  lengthLong: "វែង",
+  summarizeType: "ប្រភេទ",
+  typeGeneral: "ទូទៅ",
+  typeMeeting: "កំណត់ត្រាប្រជុំ",
+  geminiKeyMissing: "GEMINI_API_KEY មិនទាន់កំណត់។ សូមបន្ថែម secret នៅក្នុងគម្រោង។",
   download: "ទាញយក",
   downloaded: "បានទាញយក",
   downloadedDesc: "សង្ខេបត្រូវបានរក្សាទុកជាឯកសារ។",
@@ -265,6 +283,15 @@ const en: Dict = {
   ocrFailed: "OCR failed",
   ocrEmpty: "No text found",
   ocrEmptyDesc: "Try a clearer document or image.",
+  modelGemini: "Gemini",
+  modelGeminiDesc: "Fast · Next-gen AI",
+  length: "Length",
+  lengthShort: "Short",
+  lengthLong: "Long",
+  summarizeType: "Type",
+  typeGeneral: "General",
+  typeMeeting: "Meeting Minutes",
+  geminiKeyMissing: "GEMINI_API_KEY is not set. Please add it in the project secrets.",
   download: "Download",
   downloaded: "Downloaded",
   downloadedDesc: "Summary saved as a file.",

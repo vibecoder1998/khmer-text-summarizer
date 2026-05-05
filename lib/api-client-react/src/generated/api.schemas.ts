@@ -18,6 +18,7 @@ export type SummarizeRequestModel =
 export const SummarizeRequestModel = {
   "mt5-base": "mt5-base",
   "gemma-4-4b": "gemma-4-4b",
+  gemini: "gemini",
 } as const;
 
 /**
@@ -31,6 +32,28 @@ export const SummarizeRequestFormat = {
   bullets: "bullets",
 } as const;
 
+/**
+ * Desired summary length (gemma-4-4b and gemini only).
+ */
+export type SummarizeRequestLength =
+  (typeof SummarizeRequestLength)[keyof typeof SummarizeRequestLength];
+
+export const SummarizeRequestLength = {
+  short: "short",
+  long: "long",
+} as const;
+
+/**
+ * Summary style — general overview or structured meeting minutes (gemma-4-4b and gemini only).
+ */
+export type SummarizeRequestSummarizeType =
+  (typeof SummarizeRequestSummarizeType)[keyof typeof SummarizeRequestSummarizeType];
+
+export const SummarizeRequestSummarizeType = {
+  general: "general",
+  "meeting-minutes": "meeting-minutes",
+} as const;
+
 export interface SummarizeRequest {
   /**
    * The source text to summarize.
@@ -42,6 +65,10 @@ export interface SummarizeRequest {
   model?: SummarizeRequestModel;
   /** Output format — flowing paragraph or bullet list. */
   format?: SummarizeRequestFormat;
+  /** Desired summary length (gemma-4-4b and gemini only). */
+  length?: SummarizeRequestLength;
+  /** Summary style — general overview or structured meeting minutes (gemma-4-4b and gemini only). */
+  summarizeType?: SummarizeRequestSummarizeType;
   /**
    * Beam search width (mT5-base only). Higher = better quality, slower.
    * @minimum 1

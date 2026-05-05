@@ -41,6 +41,8 @@ export const summarizeTextBodyTextMax = 50000;
 
 export const summarizeTextBodyModelDefault = `mt5-base`;
 export const summarizeTextBodyFormatDefault = `paragraph`;
+export const summarizeTextBodyLengthDefault = `short`;
+export const summarizeTextBodySummarizeTypeDefault = `general`;
 export const summarizeTextBodyNumBeamsDefault = 4;
 export const summarizeTextBodyNumBeamsMax = 8;
 
@@ -59,13 +61,23 @@ export const SummarizeTextBody = zod.object({
     .max(summarizeTextBodyTextMax)
     .describe("The source text to summarize."),
   model: zod
-    .enum(["mt5-base", "gemma-4-4b"])
+    .enum(["mt5-base", "gemma-4-4b", "gemini"])
     .default(summarizeTextBodyModelDefault)
     .describe("Which underlying model to use."),
   format: zod
     .enum(["paragraph", "bullets"])
     .default(summarizeTextBodyFormatDefault)
     .describe("Output format — flowing paragraph or bullet list."),
+  length: zod
+    .enum(["short", "long"])
+    .default(summarizeTextBodyLengthDefault)
+    .describe("Desired summary length (gemma-4-4b and gemini only)."),
+  summarizeType: zod
+    .enum(["general", "meeting-minutes"])
+    .default(summarizeTextBodySummarizeTypeDefault)
+    .describe(
+      "Summary style — general overview or structured meeting minutes (gemma-4-4b and gemini only).",
+    ),
   numBeams: zod
     .number()
     .min(1)

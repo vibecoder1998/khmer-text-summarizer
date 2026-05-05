@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
-import { Copy, Trash2, ArrowRight, Loader2, Type, AlignLeft, Sparkles, Clock, HardDrive, FileText, SplitSquareHorizontal, Cpu, Zap, Download, Share2 } from "lucide-react";
+import { Copy, Trash2, ArrowRight, Loader2, Type, AlignLeft, Sparkles, Clock, HardDrive, FileText, SplitSquareHorizontal, Cpu, Zap, Download, Share2, Gem } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 import { InputSource, type InputMode } from "@/components/input-source";
@@ -26,6 +26,8 @@ export default function Home() {
   const [inputMode, setInputMode] = useState<InputMode>("text");
   const [model, setModel] = useState<SummarizeRequestModel>("mt5-base");
   const [format, setFormat] = useState<SummarizeRequestFormat>("paragraph");
+  const [length, setLength] = useState<"short" | "long">("short");
+  const [summarizeType, setSummarizeType] = useState<"general" | "meeting-minutes">("general");
   const [numBeams, setNumBeams] = useState<number>(4);
   const [maxNewTokens, setMaxNewTokens] = useState<number>(256);
   const [maxLength, setMaxLength] = useState<number>(512);
@@ -71,8 +73,10 @@ export default function Home() {
 
     if (model === "mt5-base") {
       summarize({ data: { text, model, format, numBeams, maxNewTokens } });
+    } else if (model === "gemma-4-4b") {
+      summarize({ data: { text, model, format, length, summarizeType, maxLength } });
     } else {
-      summarize({ data: { text, model, format, maxLength } });
+      summarize({ data: { text, model, format, length, summarizeType } });
     }
   };
 
@@ -215,15 +219,16 @@ export default function Home() {
                   <Cpu className="w-3.5 h-3.5" /> {t.model}
                 </label>
                 <div className="flex flex-col gap-1.5">
-                  {(["mt5-base", "gemma-4-4b"] as const).map((opt) => {
-                    const active = model === opt;
-                    const label = opt === "mt5-base" ? t.modelMt5 : t.modelGemma;
-                    const desc = opt === "mt5-base" ? t.modelMt5Desc : t.modelGemmaDesc;
-                    const icon = opt === "mt5-base" ? <Zap className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />;
+                  {([
+                    { id: "mt5-base", label: t.modelMt5, desc: t.modelMt5Desc, icon: <Zap className="w-3.5 h-3.5" /> },
+                    { id: "gemma-4-4b", label: t.modelGemma, desc: t.modelGemmaDesc, icon: <Sparkles className="w-3.5 h-3.5" /> },
+                    { id: "gemini", label: t.modelGemini, desc: t.modelGeminiDesc, icon: <Gem className="w-3.5 h-3.5" /> },
+                  ] as const).map(({ id, label, desc, icon }) => {
+                    const active = model === id;
                     return (
                       <button
-                        key={opt}
-                        onClick={() => setModel(opt)}
+                        key={id}
+                        onClick={() => setModel(id)}
                         className={`text-left p-2.5 rounded-md border transition-all ${active ? 'bg-primary/5 border-primary text-foreground' : 'bg-background border-border hover:border-foreground/20'}`}
                       >
                         <div className="flex items-center gap-1.5 text-sm font-medium">
@@ -237,7 +242,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Format */}
+              {/* Format — all models */}
               <div className="space-y-3">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                   <Type className="w-3.5 h-3.5" /> {t.format}
@@ -254,6 +259,45 @@ export default function Home() {
                   ))}
                 </div>
               </div>
+
+              {/* Length + Type — Gemma & Gemini */}
+              {(model === "gemma-4-4b" || model === "gemini") && (
+                <>
+                  <div className="space-y-3">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <AlignLeft className="w-3.5 h-3.5" /> {t.length}
+                    </label>
+                    <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
+                      {(["short", "long"] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => setLength(opt)}
+                          className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${length === opt ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                        >
+                          {opt === "short" ? t.lengthShort : t.lengthLong}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5" /> {t.summarizeType}
+                    </label>
+                    <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
+                      {(["general", "meeting-minutes"] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => setSummarizeType(opt)}
+                          className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${summarizeType === opt ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                        >
+                          {opt === "general" ? t.typeGeneral : t.typeMeeting}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* mT5-only params */}
               {model === "mt5-base" && (

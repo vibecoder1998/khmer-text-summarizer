@@ -107,7 +107,7 @@ components:
           description: The source text to summarize.
         model:
           type: string
-          enum: [mt5-base, gemma-4-4b]
+          enum: [mt5-base, gemma-4-4b, gemini]
           default: mt5-base
           description: Which underlying model to use.
         format:
@@ -115,6 +115,16 @@ components:
           enum: [paragraph, bullets]
           default: paragraph
           description: Output format — flowing paragraph or bullet list.
+        length:
+          type: string
+          enum: [short, long]
+          default: short
+          description: Desired summary length (gemma-4-4b and gemini only).
+        summarizeType:
+          type: string
+          enum: [general, meeting-minutes]
+          default: general
+          description: Summary style — general overview or structured meeting minutes (gemma-4-4b and gemini only).
         numBeams:
           type: integer
           minimum: 1

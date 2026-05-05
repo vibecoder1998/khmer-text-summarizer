@@ -15,4 +15,5 @@ export type SummarizeRequestModel =
 export const SummarizeRequestModel = {
   "mt5-base": "mt5-base",
   "gemma-4-4b": "gemma-4-4b",
+  gemini: "gemini",
 } as const;
