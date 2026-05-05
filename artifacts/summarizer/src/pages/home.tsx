@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { useSummarizeText } from "@workspace/api-client-react";
@@ -14,6 +14,16 @@ import { useI18n } from "@/lib/i18n";
 import { InputSource, type InputMode } from "@/components/input-source";
 import { HistoryPanel } from "@/components/history-panel";
 import { useHistory, type HistoryItem } from "@/lib/history";
+
+type StreamResult = {
+  summary: string;
+  format: "paragraph" | "bullets";
+  model: string;
+  sourceWordCount: number;
+  summaryWordCount: number;
+  compressionRatio: number;
+  durationMs: number;
+};
 
 const MIN_CHARS = 50;
 const MAX_CHARS = 50000;
@@ -76,51 +86,110 @@ export default function Home() {
   const [maxNewTokens, setMaxNewTokens] = useState<number>(256);
   const [maxLength, setMaxLength] = useState<number>(512);
 
-  const { mutate: summarize, data: result, isPending, error } = useSummarizeText();
+  const { mutate: summarize, data: mt5Result, isPending, error } = useSummarizeText();
   const { add: addHistory } = useHistory();
   const lastSavedRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (!result?.summary) return;
-    const key = `${result.summary}-${result.model}-${result.durationMs}`;
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const [streamResult, setStreamResult] = useState<StreamResult | null>(null);
+
+  const result = streamResult ?? mt5Result ?? null;
+  const activeIsLoading = isPending || isStreaming;
+  const activeError = error || (streamError ? new Error(streamError) : null);
+
+  const saveToHistory = useCallback((r: StreamResult, sourceText: string) => {
+    const key = `${r.summary}-${r.model}-${r.durationMs}`;
     if (lastSavedRef.current === key) return;
     lastSavedRef.current = key;
     addHistory({
-      sourceText: text,
-      summary: result.summary,
-      format: result.format,
-      model: result.model,
-      sourceWordCount: result.sourceWordCount,
-      summaryWordCount: result.summaryWordCount,
-      compressionRatio: result.compressionRatio,
-      durationMs: result.durationMs,
+      sourceText,
+      summary: r.summary,
+      format: r.format,
+      model: r.model,
+      sourceWordCount: r.sourceWordCount,
+      summaryWordCount: r.summaryWordCount,
+      compressionRatio: r.compressionRatio,
+      durationMs: r.durationMs,
     });
-  }, [result, addHistory, text]);
+  }, [addHistory]);
+
+  useEffect(() => {
+    if (!mt5Result?.summary) return;
+    saveToHistory(mt5Result, text);
+  }, [mt5Result, saveToHistory, text]);
+
+  useEffect(() => {
+    if (!streamResult?.summary) return;
+    saveToHistory(streamResult, text);
+  }, [streamResult, saveToHistory, text]);
+
+  const handleStreamingSummarize = useCallback(async (payload: Record<string, unknown>) => {
+    setIsStreaming(true);
+    setStreamingText("");
+    setStreamError(null);
+    setStreamResult(null);
+    try {
+      const response = await fetch("/api/summarize/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok || !response.body) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error((errJson as { message?: string }).message ?? "Failed to start stream");
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() ?? "";
+        for (const part of parts) {
+          if (!part.startsWith("data: ")) continue;
+          const event = JSON.parse(part.slice(6)) as Record<string, unknown>;
+          if (event.error) {
+            throw new Error((event.message as string | undefined) ?? "Summarization failed");
+          }
+          if (typeof event.chunk === "string") {
+            setStreamingText(event.chunk);
+          }
+          if (event.done) {
+            setStreamResult(event as unknown as StreamResult);
+            setStreamingText(null);
+          }
+        }
+      }
+    } catch (err) {
+      setStreamError(err instanceof Error ? err.message : "Failed to summarize. Please try again.");
+    } finally {
+      setIsStreaming(false);
+    }
+  }, []);
 
   const handleSummarize = () => {
     if (text.length < MIN_CHARS) {
-      toast({
-        title: t.textTooShortTitle,
-        description: t.textTooShortDesc(MIN_CHARS),
-        variant: "destructive",
-      });
+      toast({ title: t.textTooShortTitle, description: t.textTooShortDesc(MIN_CHARS), variant: "destructive" });
       return;
     }
     if (text.length > MAX_CHARS) {
-      toast({
-        title: t.textTooLongTitle,
-        description: t.textTooLongDesc(MAX_CHARS),
-        variant: "destructive",
-      });
+      toast({ title: t.textTooLongTitle, description: t.textTooLongDesc(MAX_CHARS), variant: "destructive" });
       return;
     }
 
     if (model === "mt5-base") {
+      setStreamResult(null);
+      setStreamingText(null);
+      setStreamError(null);
       summarize({ data: { text, model, format, summarizeType, numBeams, maxNewTokens } });
     } else if (model === "gemma-4-4b") {
-      summarize({ data: { text, model, format, length, summarizeType, maxLength } });
+      void handleStreamingSummarize({ text, model, format, length, summarizeType, maxLength });
     } else {
-      summarize({ data: { text, model, format, length, summarizeType } });
+      void handleStreamingSummarize({ text, model, format, length, summarizeType });
     }
   };
 
@@ -413,9 +482,9 @@ export default function Home() {
               size="lg"
               className="w-full shadow-md text-base h-12 font-medium"
               onClick={handleSummarize}
-              disabled={isPending || charCount < MIN_CHARS || charCount > MAX_CHARS}
+              disabled={activeIsLoading || charCount < MIN_CHARS || charCount > MAX_CHARS}
             >
-              {isPending ? (
+              {activeIsLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   {t.distilling}
@@ -427,7 +496,7 @@ export default function Home() {
               )}
             </Button>
 
-            {error && (
+            {activeError && (
               <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
                 {t.failed}
               </div>
@@ -437,7 +506,7 @@ export default function Home() {
           <div className="flex flex-col gap-4 h-full">
             <div className="flex justify-between items-center">
               <label className="text-sm font-medium text-foreground">{t.summary}</label>
-              {result && !isPending && (
+              {result && !activeIsLoading && (
                 <div className="flex items-center gap-0.5">
                   <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground hover:text-foreground" onClick={handleCopy} title={t.copy}>
                     <Copy className="w-3.5 h-3.5" />
@@ -474,6 +543,29 @@ export default function Home() {
                       <Skeleton className="h-4 w-4/5 rounded-sm" />
                     </div>
                   </motion.div>
+                ) : isStreaming ? (
+                  <motion.div
+                    key="streaming"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-card rounded-md border border-border shadow-sm flex flex-col"
+                  >
+                    <div className="p-6 flex-1 overflow-y-auto prose dark:prose-invert prose-p:leading-relaxed prose-li:leading-relaxed max-w-none text-card-foreground">
+                      {streamingText ? (
+                        <p className="whitespace-pre-wrap mt-0 text-base">{streamingText}<span className="inline-block w-0.5 h-4 bg-primary ml-0.5 animate-pulse align-middle" /></p>
+                      ) : (
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>{t.distilling}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4 border-t border-border/50 bg-muted/20 flex items-center gap-2 text-xs text-muted-foreground rounded-b-md">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>{t.distilling}</span>
+                    </div>
+                  </motion.div>
                 ) : result ? (
                   <motion.div
                     key="result"
@@ -490,10 +582,6 @@ export default function Home() {
                       <div className="flex items-center gap-1.5">
                         <HardDrive className="w-3.5 h-3.5" />
                         <span>{t.compressed((result.compressionRatio * 100).toFixed(0))}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>{t.wordsArrow(result.sourceWordCount, result.summaryWordCount)}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5" />

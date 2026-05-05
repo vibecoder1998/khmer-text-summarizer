@@ -13,6 +13,8 @@ const SPACES: Record<GradioModelId, string> = {
   "gemma-4-4b": "lonewolf168/khmer-text-summarizer",
 };
 
+const GEMINI_MODEL = "gemini-2.0-flash";
+
 function countWords(text: string): number {
   const trimmed = text.trim();
   if (!trimmed) return 0;
@@ -113,6 +115,11 @@ Text to summarize:
 ${text}`;
 }
 
+function getGeminiClient(apiKey: string) {
+  const genAI = new GoogleGenerativeAI(apiKey);
+  return genAI.getGenerativeModel({ model: GEMINI_MODEL });
+}
+
 router.post("/summarize", async (req: Request, res: Response) => {
   const startedAt = Date.now();
 
@@ -181,8 +188,7 @@ router.post("/summarize", async (req: Request, res: Response) => {
         });
         return;
       }
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro-preview-05-06" });
+      const geminiModel = getGeminiClient(apiKey);
       const prompt = buildGeminiPrompt(data.text, format, length, summarizeType);
       const gemResult = await geminiModel.generateContent(prompt);
       summary = gemResult.response.text().trim();
@@ -225,6 +231,94 @@ router.post("/summarize", async (req: Request, res: Response) => {
           ? err.message
           : "Failed to generate a summary. Please try again.",
     });
+  }
+});
+
+router.post("/summarize/stream", async (req: Request, res: Response) => {
+  const startedAt = Date.now();
+
+  const parseResult = SummarizeTextBody.safeParse(req.body);
+  if (!parseResult.success) {
+    res.status(400).json({
+      error: "invalid_request",
+      message: parseResult.error.issues[0]?.message ?? "Invalid request body.",
+    });
+    return;
+  }
+
+  const data = parseResult.data;
+  const model: ModelId = (data.model ?? "mt5-base") as ModelId;
+  const format = (data.format ?? "paragraph") as "paragraph" | "bullets";
+  const length = (data.length ?? "short") as "short" | "long";
+  const summarizeType = (data.summarizeType ?? "general") as "general" | "meeting-minutes";
+
+  if (model !== "gemma-4-4b" && model !== "gemini") {
+    res.status(400).json({ error: "streaming_not_supported", message: "Streaming is only supported for gemma-4-4b and gemini." });
+    return;
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const send = (payload: object) => {
+    res.write(`data: ${JSON.stringify(payload)}\n\n`);
+  };
+
+  try {
+    let summary = "";
+
+    if (model === "gemma-4-4b") {
+      const client = await getGradioClient("gemma-4-4b");
+      const maxLength = length === "short" ? 512 : 1024;
+      const job = client.submit("/summarize", {
+        text: data.text,
+        max_length: maxLength,
+      });
+      for await (const output of job) {
+        const raw = (output as { data: unknown }).data;
+        if (Array.isArray(raw) && typeof raw[0] === "string") {
+          summary = (raw[0] as string).trim();
+          send({ chunk: summary });
+        } else if (typeof raw === "string") {
+          summary = (raw as string).trim();
+          send({ chunk: summary });
+        }
+      }
+    } else {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        send({ error: "gemini_not_configured", message: "GEMINI_API_KEY is not set." });
+        res.end();
+        return;
+      }
+      const geminiModel = getGeminiClient(apiKey);
+      const prompt = buildGeminiPrompt(data.text, format, length, summarizeType);
+      const streamResult = await geminiModel.generateContentStream(prompt);
+      for await (const chunk of streamResult.stream) {
+        summary += chunk.text();
+        send({ chunk: summary });
+      }
+    }
+
+    if (!summary) {
+      send({ error: "empty_summary", message: "The model did not return a summary. Please try again." });
+      res.end();
+      return;
+    }
+
+    const sourceWordCount = countWords(data.text);
+    const summaryWordCount = countWords(summary);
+    const compressionRatio = sourceWordCount > 0 ? Number((summaryWordCount / sourceWordCount).toFixed(4)) : 0;
+    const durationMs = Date.now() - startedAt;
+
+    send({ done: true, summary, format, model, sourceWordCount, summaryWordCount, compressionRatio, durationMs });
+    res.end();
+  } catch (err) {
+    req.log.error({ err }, "Streaming summarization failed");
+    send({ error: "summarization_failed", message: err instanceof Error ? err.message : "Failed to generate a summary." });
+    res.end();
   }
 });
 

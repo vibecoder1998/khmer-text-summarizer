@@ -104,10 +104,7 @@ export function HistoryPanel({ onRestore }: Props) {
                 {item.summary}
               </p>
 
-              <div className="flex items-center justify-between mt-1 pt-2 border-t border-border/40">
-                <div className="text-[10px] text-muted-foreground font-mono">
-                  {item.sourceWordCount} → {item.summaryWordCount}
-                </div>
+              <div className="flex items-center justify-end mt-1 pt-2 border-t border-border/40">
                 <Button
                   variant="ghost"
                   size="sm"
