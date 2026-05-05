@@ -9,7 +9,7 @@ type GradioModelId = "mt5-base" | "gemma-4-4b";
 type ModelId = GradioModelId | "gemini";
 
 const SPACES: Record<GradioModelId, string> = {
-  "mt5-base": "taravirak/khmer-text-summarizer",
+  "mt5-base": "lonewolf168/khmer-mt5-summarizer-demo",
   "gemma-4-4b": "lonewolf168/khmer-text-summarizer",
 };
 
