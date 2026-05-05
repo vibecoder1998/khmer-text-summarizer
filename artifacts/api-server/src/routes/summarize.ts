@@ -89,17 +89,21 @@ function buildGeminiPrompt(
       : "Format the output as flowing paragraphs with no bullet points.";
 
   if (summarizeType === "meeting-minutes") {
-    return `You are a professional meeting-minutes writer. Analyze the following text and produce structured meeting minutes in Khmer.
+    return `You are a professional meeting-minutes writer. Analyze the following text and produce structured meeting minutes entirely in Khmer.
 
-Include these sections (in Khmer):
-- ចំណុចពិភាក្សា (Discussion Points)
-- សេចក្តីសម្រេចចិត្ត (Decisions Made)
-- ភារកិច្ចដែលត្រូវធ្វើ (Action Items)
-- ជំហានបន្ទាប់ (Next Steps)
+Use exactly these section headings (Khmer only, no English translations or brackets):
+- ចំណុចពិភាក្សា
+- សេចក្តីសម្រេចចិត្ត
+- ភារកិច្ចដែលត្រូវធ្វើ
+- ជំហានបន្ទាប់
 
-${formatInstruction}
-${lengthInstruction}
-Write entirely in Khmer. Do not include any English except for proper nouns.
+STRICT RULES:
+- Write 100% in Khmer. Zero English words, zero English letters — not even in parentheses or brackets.
+- Do NOT include any dates, metadata, or introductory lines unless they appear in the source text.
+- Do NOT use any markdown formatting: no asterisks (*), no double asterisks (**), no hashes (#), no underscores.
+- Section headings must appear on their own line as plain Khmer text followed by a colon.
+- ${formatInstruction}
+- ${lengthInstruction}
 
 Text to process:
 ${text}`;
@@ -113,6 +117,16 @@ Write entirely in Khmer. Preserve the key facts, figures, and named entities fro
 
 Text to summarize:
 ${text}`;
+}
+
+function cleanGeminiMeetingOutput(text: string, summarizeType: string): string {
+  if (summarizeType !== "meeting-minutes") return text;
+  return text
+    .replace(/\*+/g, "")
+    .replace(/\([^)]*[a-zA-Z][^)]*\)/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function getGeminiClient(apiKey: string) {
@@ -191,7 +205,7 @@ router.post("/summarize", async (req: Request, res: Response) => {
       const geminiModel = getGeminiClient(apiKey);
       const prompt = buildGeminiPrompt(data.text, format, length, summarizeType);
       const gemResult = await geminiModel.generateContent(prompt);
-      summary = gemResult.response.text().trim();
+      summary = cleanGeminiMeetingOutput(gemResult.response.text().trim(), summarizeType);
     }
 
     if (!summary) {
@@ -298,7 +312,7 @@ router.post("/summarize/stream", async (req: Request, res: Response) => {
       const streamResult = await geminiModel.generateContentStream(prompt);
       for await (const chunk of streamResult.stream) {
         summary += chunk.text();
-        send({ chunk: summary });
+        send({ chunk: cleanGeminiMeetingOutput(summary, summarizeType) });
       }
     }
 
