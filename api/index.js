@@ -1,39 +1,46 @@
 // Vercel Serverless Function Handler
 // This loads the pre-built API server and serves it as a Vercel function
 
-const path = require('path');
+let appInstance = null;
 
-// Load the built API server (ESM module)
-let apiHandler = null;
-
-async function loadApi() {
-  if (apiHandler) return apiHandler;
+async function loadApp() {
+  if (appInstance) {
+    return appInstance;
+  }
   
   try {
-    // Import the built API server
-    const apiModule = await import(path.join(__dirname, '../artifacts/api-server/dist/index.mjs'));
-    return apiModule.default;
+    console.log('[v0] Loading API server from dist/index.mjs');
+    // Import the built API server ESM module
+    const { default: app } = await import('../artifacts/api-server/dist/index.mjs');
+    
+    if (!app || typeof app !== 'function') {
+      throw new Error('API module does not export a valid Express app');
+    }
+    
+    appInstance = app;
+    console.log('[v0] API server loaded successfully');
+    return appInstance;
   } catch (err) {
-    console.error('[v0] Failed to load API module:', err);
+    console.error('[v0] Failed to load API server:', err?.message || err);
+    console.error('[v0] Error details:', err);
     throw err;
   }
 }
 
 module.exports = async (req, res) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
-    return res.status(200).end();
-  }
-
   try {
-    const app = await loadApi();
-    console.log('[v0] API handler loaded, calling app');
+    const app = await loadApp();
+    
+    // Call the Express app directly with the request and response
+    // Express apps are callable as functions: app(req, res)
     return app(req, res);
   } catch (err) {
-    console.error('[v0] API error:', err);
-    return res.status(500).json({ error: 'Internal server error', message: err.message });
+    console.error('[v0] Handler error:', err?.message || err);
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Failed to load API server', 
+        message: err?.message || 'Unknown error'
+      });
+    }
   }
 };
