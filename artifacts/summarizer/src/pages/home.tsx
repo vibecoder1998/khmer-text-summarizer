@@ -444,7 +444,7 @@ export default function Home() {
                     <input
                       type="range"
                       min={32}
-                      max={1024}
+                      max={256}
                       step={32}
                       value={maxNewTokens}
                       onChange={(e) => setMaxNewTokens(Number(e.target.value))}
