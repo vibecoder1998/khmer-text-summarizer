@@ -304,42 +304,43 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Summarize Type — all models */}
-              <div className="space-y-3">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5" /> {t.summarizeType}
-                </label>
-                <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
-                  {(["general", "meeting-minutes"] as const).map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => setSummarizeType(opt)}
-                      className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${summarizeType === opt ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-                    >
-                      {opt === "general" ? t.typeGeneral : t.typeMeeting}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Length — Gemma & Gemini only */}
+              {/* Length + Summarize Type — Gemma & Gemini only */}
               {(model === "gemma-4-4b" || model === "gemini") && (
-                <div className="space-y-3">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <AlignLeft className="w-3.5 h-3.5" /> {t.length}
-                  </label>
-                  <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
-                    {(["short", "long"] as const).map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => setLength(opt)}
-                        className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${length === opt ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-                      >
-                        {opt === "short" ? t.lengthShort : t.lengthLong}
-                      </button>
-                    ))}
+                <>
+                  <div className="space-y-3">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <AlignLeft className="w-3.5 h-3.5" /> {t.length}
+                    </label>
+                    <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
+                      {(["short", "long"] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => setLength(opt)}
+                          className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${length === opt ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                        >
+                          {opt === "short" ? t.lengthShort : t.lengthLong}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+
+                  <div className="space-y-3">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5" /> {t.summarizeType}
+                    </label>
+                    <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
+                      {(["general", "meeting-minutes"] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => setSummarizeType(opt)}
+                          className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${summarizeType === opt ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                        >
+                          {opt === "general" ? t.typeGeneral : t.typeMeeting}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* mT5-only params */}
