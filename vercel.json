@@ -1,6 +1,6 @@
 {
-  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm run build && ls -la artifacts/summarizer/dist",
-  "outputDirectory": "artifacts/summarizer/dist",
+  "buildCommand": "PORT=3000 BASE_PATH=/ pnpm run build",
+  "outputDirectory": "artifacts/summarizer/dist/public",
   "installCommand": "pnpm install",
   "env": {
     "PORT": "3000",
