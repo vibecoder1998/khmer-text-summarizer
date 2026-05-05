@@ -180,7 +180,7 @@ router.post("/summarize", async (req: Request, res: Response) => {
         return;
       }
       const genAI = new GoogleGenerativeAI(apiKey);
-      const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-pro-preview-05-06" });
       const prompt = buildGeminiPrompt(data.text, format, length, summarizeType);
       const gemResult = await geminiModel.generateContent(prompt);
       summary = gemResult.response.text().trim();
