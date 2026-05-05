@@ -109,8 +109,8 @@ type Dict = {
 
 const km: Dict = {
   brand: "ខ្លឹម",
-  heroTitleA: "ការគិតច្បាស់លាស់",
-  heroTitleB: "ពីការសរសេរស្មុគស្មាញ",
+  heroTitleA: "ខ្លីៗហើយខ្លឹម",
+  heroTitleB: "គ្មានភាពស្មុគស្មាញ",
   heroSubtitle:
     "ឧបករណ៍សម្រាប់និពន្ធករ អ្នកស្រាវជ្រាវ និងអ្នកសរសេរ។ បិទភ្ជាប់អត្ថបទវែងរបស់អ្នក រួចសម្រួលឱ្យនៅសល់តែខ្លឹមសារសំខាន់។",
   sourceText: "អត្ថបទដើម",
@@ -216,8 +216,8 @@ const km: Dict = {
 
 const en: Dict = {
   brand: "ខ្លឹម",
-  heroTitleA: "Clear thoughts from",
-  heroTitleB: "complex writing.",
+  heroTitleA: "Short, essential.",
+  heroTitleB: "Without the complexity.",
   heroSubtitle:
     "A focused tool for editors, researchers, and writers. Paste your long-form text and condense it into its essential meaning.",
   sourceText: "Source text",
