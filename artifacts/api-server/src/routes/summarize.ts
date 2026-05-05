@@ -159,16 +159,18 @@ router.post("/summarize", async (req: Request, res: Response) => {
       }
     } else if (model === "gemma-4-4b") {
       const client = await getGradioClient("gemma-4-4b");
-      const maxLength = length === "short" ? 256 : 700;
-      const result = await client.predict("/summarize", {
+      const maxLength = length === "short" ? 512 : 1024;
+      const job = client.submit("/summarize", {
         text: data.text,
         max_length: maxLength,
       });
-      const raw = result.data as unknown;
-      if (Array.isArray(raw) && typeof raw[0] === "string") {
-        summary = raw[0].trim();
-      } else if (typeof raw === "string") {
-        summary = (raw as string).trim();
+      for await (const output of job) {
+        const raw = (output as { data: unknown }).data;
+        if (Array.isArray(raw) && typeof raw[0] === "string") {
+          summary = (raw[0] as string).trim();
+        } else if (typeof raw === "string") {
+          summary = (raw as string).trim();
+        }
       }
     } else {
       const apiKey = process.env.GEMINI_API_KEY;
@@ -193,14 +195,6 @@ router.post("/summarize", async (req: Request, res: Response) => {
         message: "The model did not return a summary. Please try again.",
       });
       return;
-    }
-
-    if (model === "gemma-4-4b") {
-      if (summarizeType === "meeting-minutes") {
-        summary = toMeetingMinutes(summary, format);
-      } else if (format === "bullets") {
-        summary = toBullets(summary);
-      }
     }
 
     const sourceWordCount = countWords(data.text);
