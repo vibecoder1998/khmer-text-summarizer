@@ -8,6 +8,20 @@ out-tsc
 .expo
 .expo-shared
 
+# Next.js
+.next
+out
+next-env.d.ts.bak
+tsconfig.tsbuildinfo
+
+# Vercel
+.vercel
+
+# Env files
+.env
+.env.local
+.env.*.local
+
 # dependencies
 node_modules
 
