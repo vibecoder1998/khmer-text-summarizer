@@ -18,6 +18,50 @@ import { useHistory, type HistoryItem } from "@/lib/history";
 const MIN_CHARS = 50;
 const MAX_CHARS = 50000;
 
+function SummaryBody({ text, format }: { text: string; format: string }) {
+  const hasSections = /^\*\*.+\*\*/m.test(text);
+
+  if (hasSections) {
+    const blocks = text.split(/\n\n+/).filter(Boolean);
+    return (
+      <div className="space-y-4 mt-0">
+        {blocks.map((block, i) => {
+          const headingMatch = block.match(/^\*\*(.+?)\*\*\n([\s\S]*)$/);
+          if (headingMatch) {
+            const heading = headingMatch[1];
+            const body = headingMatch[2].trim();
+            const lines = body.split('\n').filter(l => l.trim());
+            return (
+              <div key={i}>
+                <p className="font-semibold text-foreground mb-1">{heading}</p>
+                {lines.length > 1 ? (
+                  <ul className="space-y-1 pl-2">
+                    {lines.map((l, j) => <li key={j}>{l.replace(/^\s*[-*•]\s*/, '')}</li>)}
+                  </ul>
+                ) : (
+                  <p className="text-base leading-relaxed">{body}</p>
+                )}
+              </div>
+            );
+          }
+          return <p key={i} className="whitespace-pre-wrap text-base">{block}</p>;
+        })}
+      </div>
+    );
+  }
+
+  if (format === "bullets") {
+    const lines = text.split('\n').filter(l => l.trim());
+    return (
+      <ul className="space-y-2 mt-0">
+        {lines.map((line, i) => <li key={i}>{line.replace(/^[-*•]\s*/, '')}</li>)}
+      </ul>
+    );
+  }
+
+  return <p className="whitespace-pre-wrap mt-0 text-base">{text}</p>;
+}
+
 export default function Home() {
   const { toast } = useToast();
   const { t } = useI18n();
@@ -72,7 +116,7 @@ export default function Home() {
     }
 
     if (model === "mt5-base") {
-      summarize({ data: { text, model, format, numBeams, maxNewTokens } });
+      summarize({ data: { text, model, format, summarizeType, numBeams, maxNewTokens } });
     } else if (model === "gemma-4-4b") {
       summarize({ data: { text, model, format, length, summarizeType, maxLength } });
     } else {
@@ -260,43 +304,42 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Length + Type — Gemma & Gemini */}
-              {(model === "gemma-4-4b" || model === "gemini") && (
-                <>
-                  <div className="space-y-3">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <AlignLeft className="w-3.5 h-3.5" /> {t.length}
-                    </label>
-                    <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
-                      {(["short", "long"] as const).map((opt) => (
-                        <button
-                          key={opt}
-                          onClick={() => setLength(opt)}
-                          className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${length === opt ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-                        >
-                          {opt === "short" ? t.lengthShort : t.lengthLong}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+              {/* Summarize Type — all models */}
+              <div className="space-y-3">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" /> {t.summarizeType}
+                </label>
+                <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
+                  {(["general", "meeting-minutes"] as const).map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => setSummarizeType(opt)}
+                      className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${summarizeType === opt ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                    >
+                      {opt === "general" ? t.typeGeneral : t.typeMeeting}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                  <div className="space-y-3">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5" /> {t.summarizeType}
-                    </label>
-                    <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
-                      {(["general", "meeting-minutes"] as const).map((opt) => (
-                        <button
-                          key={opt}
-                          onClick={() => setSummarizeType(opt)}
-                          className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${summarizeType === opt ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-                        >
-                          {opt === "general" ? t.typeGeneral : t.typeMeeting}
-                        </button>
-                      ))}
-                    </div>
+              {/* Length — Gemma & Gemini only */}
+              {(model === "gemma-4-4b" || model === "gemini") && (
+                <div className="space-y-3">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <AlignLeft className="w-3.5 h-3.5" /> {t.length}
+                  </label>
+                  <div className="flex bg-muted/50 p-1 rounded-md border border-border/50">
+                    {(["short", "long"] as const).map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => setLength(opt)}
+                        className={`flex-1 text-xs py-1.5 px-2 rounded font-medium transition-all ${length === opt ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                      >
+                        {opt === "short" ? t.lengthShort : t.lengthLong}
+                      </button>
+                    ))}
                   </div>
-                </>
+                </div>
               )}
 
               {/* mT5-only params */}
@@ -439,15 +482,7 @@ export default function Home() {
                     className="absolute inset-0 bg-card rounded-md border border-border shadow-sm flex flex-col"
                   >
                     <div className="p-6 flex-1 overflow-y-auto prose dark:prose-invert prose-p:leading-relaxed prose-li:leading-relaxed max-w-none text-card-foreground">
-                      {result.format === "bullets" ? (
-                        <ul className="space-y-2 mt-0">
-                          {result.summary.split('\n').filter(line => line.trim()).map((line, i) => (
-                            <li key={i}>{line.replace(/^[-*•]\s*/, '')}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="whitespace-pre-wrap mt-0 text-base">{result.summary}</p>
-                      )}
+                      <SummaryBody text={result.summary} format={result.format} />
                     </div>
 
                     <div className="p-4 border-t border-border/50 bg-muted/20 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground rounded-b-md">

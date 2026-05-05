@@ -28,6 +28,35 @@ function toBullets(text: string): string {
   return sentences.map((s) => `- ${s}`).join("\n");
 }
 
+function toMeetingMinutes(text: string, format: "paragraph" | "bullets"): string {
+  const sentences = text
+    .split(/(?<=[។?!])\s+|\n+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+  const total = sentences.length;
+  const q1 = Math.ceil(total * 0.4);
+  const q2 = Math.ceil(total * 0.7);
+  const q3 = Math.ceil(total * 0.85);
+
+  const sections: [string, string[]][] = [
+    ["ចំណុចពិភាក្សា", sentences.slice(0, q1)],
+    ["សេចក្តីសម្រេចចិត្ត", sentences.slice(q1, q2)],
+    ["ភារកិច្ចដែលត្រូវធ្វើ", sentences.slice(q2, q3)],
+    ["ជំហានបន្ទាប់", sentences.slice(q3)],
+  ].filter(([, items]) => (items as string[]).length > 0) as [string, string[]][];
+
+  return sections
+    .map(([heading, items]) => {
+      const body =
+        format === "bullets"
+          ? (items as string[]).map((s) => `  - ${s}`).join("\n")
+          : (items as string[]).join(" ");
+      return `**${heading}**\n${body}`;
+    })
+    .join("\n\n");
+}
+
 const gradioCache = new Map<GradioModelId, Promise<Client>>();
 function getGradioClient(model: GradioModelId): Promise<Client> {
   let p = gradioCache.get(model);
@@ -123,6 +152,11 @@ router.post("/summarize", async (req: Request, res: Response) => {
       } else if (typeof raw === "string") {
         summary = (raw as string).trim();
       }
+      if (summarizeType === "meeting-minutes") {
+        summary = toMeetingMinutes(summary, format);
+      } else if (format === "bullets") {
+        summary = toBullets(summary);
+      }
     } else if (model === "gemma-4-4b") {
       const client = await getGradioClient("gemma-4-4b");
       const maxLength = length === "short" ? 256 : 700;
@@ -161,8 +195,12 @@ router.post("/summarize", async (req: Request, res: Response) => {
       return;
     }
 
-    if (format === "bullets" && model !== "gemini") {
-      summary = toBullets(summary);
+    if (model === "gemma-4-4b") {
+      if (summarizeType === "meeting-minutes") {
+        summary = toMeetingMinutes(summary, format);
+      } else if (format === "bullets") {
+        summary = toBullets(summary);
+      }
     }
 
     const sourceWordCount = countWords(data.text);
